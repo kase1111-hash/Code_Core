@@ -1,0 +1,46 @@
+# Ollama Automation Harness - Docker Compose
+# Usage: docker-compose up -d
+
+services:
+  # Main application
+  harness:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ollama-harness
+    stdin_open: true
+    tty: true
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount sandbox for persistent file operations
+      - ./sandbox:/app/sandbox
+      # Mount logs for debugging
+      - ./logs:/app/logs
+      # Mount config for easy customization
+      - ./config:/app/config:ro
+    # Connect to host network to access local Ollama
+    network_mode: host
+    restart: unless-stopped
+
+  # Development container with all dev dependencies
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ollama-harness-dev
+    stdin_open: true
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      # Mount entire project for live development
+      - .:/app
+      # Exclude venv and cache
+      - /app/.venv
+      - /app/__pycache__
+    network_mode: host
+    profiles:
+      - dev
