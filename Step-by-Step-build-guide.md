@@ -32,7 +32,7 @@
 
 ✅ Add general logging
 
- Add error logging (Sentry, ELK, etc.)
+✅ Add error logging (Sentry, ELK, etc.)
 
  Secure configuration (.env or secrets manager)
 

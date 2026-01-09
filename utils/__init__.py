@@ -6,6 +6,7 @@ Modules:
     logger: Audit trail and error logging
     validation: Input validation and sanitation
     errors: Centralized error handling
+    error_tracking: Sentry/ELK error tracking integration
 """
 
 from utils.logger import (
@@ -80,6 +81,20 @@ from utils.errors import (
     get_recovery_suggestion,
     wrap_exception,
 )
+from utils.error_tracking import (
+    init_error_tracking,
+    capture_exception,
+    capture_message,
+    get_error_counts,
+    get_error_summary,
+    reset_error_counts,
+    register_error_callback,
+    unregister_error_callback,
+    error_context,
+    capture_errors,
+    format_for_elk,
+    get_elk_index_template,
+)
 
 __all__ = [
     # Logger
@@ -150,4 +165,17 @@ __all__ = [
     "is_recoverable",
     "get_recovery_suggestion",
     "wrap_exception",
+    # Error Tracking
+    "init_error_tracking",
+    "capture_exception",
+    "capture_message",
+    "get_error_counts",
+    "get_error_summary",
+    "reset_error_counts",
+    "register_error_callback",
+    "unregister_error_callback",
+    "error_context",
+    "capture_errors",
+    "format_for_elk",
+    "get_elk_index_template",
 ]

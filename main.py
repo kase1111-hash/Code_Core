@@ -44,6 +44,10 @@ from utils.errors import (
     get_recovery_suggestion,
     wrap_exception,
 )
+from utils.error_tracking import (
+    init_error_tracking,
+    capture_exception,
+)
 
 
 def main() -> None:
@@ -79,6 +83,7 @@ def main() -> None:
     # Initialize
     ensure_directories()
     setup_logger()
+    init_error_tracking()  # Initialize Sentry/ELK error tracking
     log_startup()
     permissions = PermissionManager(args.config)
 
@@ -131,6 +136,7 @@ def main() -> None:
 
     except HarnessError as e:
         log_error(e, "main_loop")
+        capture_exception(e, context="main_loop")  # Send to Sentry/ELK
         print(f"\n[Fatal Error]: {format_error_for_user(e)}")
         suggestion = get_recovery_suggestion(e)
         if suggestion:
@@ -141,6 +147,7 @@ def main() -> None:
     except Exception as e:
         wrapped = wrap_exception(e, "main_loop")
         log_error(wrapped, "main_loop")
+        capture_exception(e, context="main_loop")  # Send to Sentry/ELK
         print(f"\n[Fatal Error]: {format_error_for_user(wrapped)}")
         log_shutdown("error")
         sys.exit(1)
@@ -216,6 +223,7 @@ def process_iteration(
 
     except ClaudeError as e:
         log_error(e, "get_response")
+        capture_exception(e, context="get_response")
         print(f"\n[Error]: {format_error_for_user(e)}")
         suggestion = get_recovery_suggestion(wrap_exception(e, "get_response"))
         if suggestion:
@@ -224,6 +232,7 @@ def process_iteration(
 
     except HarnessError as e:
         log_error(e, "process_iteration")
+        capture_exception(e, context="process_iteration")
         print(f"\n[Error]: {format_error_for_user(e)}")
         if is_recoverable(e):
             suggestion = get_recovery_suggestion(e)
@@ -235,6 +244,7 @@ def process_iteration(
     except Exception as e:
         wrapped = wrap_exception(e, "process_iteration")
         log_error(wrapped, "process_iteration")
+        capture_exception(e, context="process_iteration")
         print(f"\n[Error]: {format_error_for_user(wrapped)}")
         return get_next_prompt()
 
