@@ -48,7 +48,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Write integration tests
 
- Write system/acceptance tests
+✅ Write system/acceptance tests
 
  Add regression test suite
 
