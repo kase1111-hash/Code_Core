@@ -11,6 +11,8 @@ import sys
 import time
 from typing import Optional
 
+__version__ = "0.1.0"
+
 from core.claude import get_response, ClaudeError, get_model_info
 from core.classifier import classify, Decision
 from core.executor import execute, ExecutionResult
@@ -58,23 +60,39 @@ def main() -> None:
     """Main entry point for the automation harness."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Ollama Automation Harness - AI-powered development automation"
+        prog="ollama-harness",
+        description="Ollama Automation Harness - AI-powered development automation",
+        epilog="For more options, use the 'cli.py' entry point with subcommands.",
+    )
+    parser.add_argument(
+        "-V", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "-p", "--prompt",
         type=str,
+        metavar="TEXT",
         help="Initial prompt (if not provided, will prompt interactively)",
+    )
+    parser.add_argument(
+        "-f", "--file",
+        type=str,
+        metavar="PATH",
+        help="Read prompt from file",
     )
     parser.add_argument(
         "--config",
         type=str,
         default=PERMISSIONS_FILE,
+        metavar="PATH",
         help="Path to permissions config file",
     )
     parser.add_argument(
         "--sandbox",
         type=str,
         default=SANDBOX_DIR,
+        metavar="PATH",
         help="Path to sandbox directory",
     )
     parser.add_argument(
@@ -82,7 +100,21 @@ def main() -> None:
         action="store_true",
         help="Enable verbose output",
     )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress non-essential output",
+    )
     args = parser.parse_args()
+
+    # Read prompt from file if specified
+    if args.file:
+        try:
+            with open(args.file) as f:
+                args.prompt = f.read().strip()
+        except OSError as e:
+            print(f"Error reading prompt file: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Initialize
     ensure_directories()
@@ -95,11 +127,12 @@ def main() -> None:
     # Display configuration
     model_info = get_model_info()
     secure_config = get_secure_config()
-    print("Ollama Automation Harness")
-    print(f"Mode: {model_info['mode']} ({model_info['model']})")
-    print(f"Environment: {secure_config.environment.value}")
-    print(f"Sandbox: {args.sandbox}")
-    print("-" * 40)
+    if not args.quiet:
+        print(f"Ollama Automation Harness v{__version__}")
+        print(f"Mode: {model_info['mode']} ({model_info['model']})")
+        print(f"Environment: {secure_config.environment.value}")
+        print(f"Sandbox: {args.sandbox}")
+        print("-" * 40)
 
     # Get initial prompt
     if args.prompt:

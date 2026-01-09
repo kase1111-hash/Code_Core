@@ -36,7 +36,7 @@
 
 ✅ Secure configuration (.env or secrets manager)
 
- Add command-line interface (if needed)
+✅ Add command-line interface (if needed)
 
  Build GUI or frontend
 
