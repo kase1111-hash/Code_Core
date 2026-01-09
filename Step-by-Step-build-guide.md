@@ -1,6 +1,6 @@
 📘 Foundation & Planning
 
- Review spec sheet & confirm requirements
+✅ Review spec sheet & confirm requirements
 
  Define user stories & acceptance criteria
 
