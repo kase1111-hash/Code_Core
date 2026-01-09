@@ -1,0 +1,56 @@
+# Ollama Automation Harness - Permission Configuration
+#
+# Permission levels:
+#   auto - Execute without user intervention
+#   ask  - Require user confirmation before execution
+#   deny - Block entirely (never execute)
+
+actions:
+  # File operations
+  read_file: auto
+  write_file: ask
+  delete_file: ask
+
+  # Code operations
+  run_tests: auto
+  lint_code: auto
+  format_code: auto
+
+  # Git operations
+  git_status: auto
+  git_diff: auto
+  git_add: ask
+  git_commit: ask
+  git_push: ask
+  git_pull: ask
+
+  # Dangerous operations
+  deploy: deny
+  deploy_production: deny
+  system_command: deny
+  install_package: ask
+
+# Default permission for unknown action types
+default: ask
+
+# Keywords that always force "user" action regardless of classification
+# These override both classifier decisions and action permissions
+dangerous_keywords:
+  - deploy
+  - production
+  - push
+  - sudo
+  - rm -rf
+  - chmod
+  - chown
+  - curl
+  - wget
+  - eval
+  - exec
+
+# Risk level thresholds
+# Actions with risk >= threshold require user approval
+risk_thresholds:
+  auto: low      # Only low-risk actions can be auto-approved
+  ask: medium    # Medium-risk actions require confirmation
+  deny: high     # High-risk actions are blocked

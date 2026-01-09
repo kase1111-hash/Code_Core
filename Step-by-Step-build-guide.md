@@ -10,7 +10,7 @@
 
 ✅ Initialize version control (Git)
 
- Set up project structure (src/, tests/, docs/)
+✅ Set up project structure (src/, tests/, docs/)
 
  Define coding conventions & style guide
 
