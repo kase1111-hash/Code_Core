@@ -54,7 +54,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Conduct performance testing (load, stress)
 
- Perform security checks (input, encryption, tokens)
+✅ Perform security checks (input, encryption, tokens)
 
  Perform exploit testing (SQLi, XSS, overflow)
 
