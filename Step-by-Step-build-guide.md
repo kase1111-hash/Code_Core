@@ -4,7 +4,7 @@
 
 ✅ Define user stories & acceptance criteria
 
- Choose tech stack & dependencies
+✅ Choose tech stack & dependencies
 
  Design architecture (system, data flow, API)
 
