@@ -16,7 +16,7 @@
 
 ✅ Create dependency manifest (package.json, requirements.txt)
 
- Configure environment management (Docker, venv, etc.)
+✅ Configure environment management (Docker, venv, etc.)
 
  Write initial README.md
 

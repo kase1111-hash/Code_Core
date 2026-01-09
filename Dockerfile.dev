@@ -1,0 +1,38 @@
+# Ollama Automation Harness - Development Docker Image
+# Build: docker build -f Dockerfile.dev -t ollama-harness-dev .
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files
+COPY requirements.txt requirements-dev.txt ./
+
+# Install all dependencies (runtime + dev)
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy application code
+COPY . .
+
+# Create required directories
+RUN mkdir -p logs sandbox
+
+# Install pre-commit hooks
+RUN git init 2>/dev/null || true && pre-commit install || true
+
+# Default command for development
+CMD ["bash"]
