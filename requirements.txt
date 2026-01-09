@@ -1,0 +1,11 @@
+# Ollama Automation Harness - Runtime Dependencies
+# Install: pip install -r requirements.txt
+
+# Claude API client
+anthropic>=0.40.0
+
+# YAML configuration parsing
+PyYAML>=6.0
+
+# Environment variable management
+python-dotenv>=1.0.0

@@ -14,7 +14,7 @@
 
 ✅ Define coding conventions & style guide
 
- Create dependency manifest (package.json, requirements.txt)
+✅ Create dependency manifest (package.json, requirements.txt)
 
  Configure environment management (Docker, venv, etc.)
 
