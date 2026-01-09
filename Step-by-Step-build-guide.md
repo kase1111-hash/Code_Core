@@ -30,7 +30,7 @@
 
 ✅ Implement error handling
 
- Add general logging
+✅ Add general logging
 
  Add error logging (Sentry, ELK, etc.)
 
