@@ -8,7 +8,7 @@
 
 ✅ Design architecture (system, data flow, API)
 
- Initialize version control (Git)
+✅ Initialize version control (Git)
 
  Set up project structure (src/, tests/, docs/)
 
