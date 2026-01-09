@@ -142,6 +142,7 @@ markers = [
     "integration: marks tests as integration tests",
     "regression: marks tests as regression tests (critical functionality)",
     "smoke: marks tests as smoke tests (quick sanity checks)",
+    "performance: marks tests as performance tests (load, stress, benchmarks)",
 ]
 
 # Coverage configuration

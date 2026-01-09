@@ -157,6 +157,10 @@ def pytest_collection_modifyitems(config, items):
         if "test_integration" in str(item.fspath):
             item.add_marker(pytest.mark.integration)
 
+        # Add performance marker to tests in test_performance.py
+        if "test_performance" in str(item.fspath):
+            item.add_marker(pytest.mark.performance)
+
 
 # =============================================================================
 # Helper Functions
