@@ -15,6 +15,12 @@ from utils.config import (
     COMMAND_TIMEOUT,
     is_allowed_extension,
 )
+from utils.validation import (
+    ValidationError,
+    validate_command,
+    validate_path,
+    contains_path_traversal,
+)
 
 
 @dataclass
@@ -38,6 +44,17 @@ def execute(command: str, sandbox_root: str = SANDBOX_DIR) -> ExecutionResult:
     Returns:
         ExecutionResult with success, output, error, return_code
     """
+    # Validate command before execution
+    try:
+        command = validate_command(command)
+    except ValidationError as e:
+        return ExecutionResult(
+            success=False,
+            output="",
+            error=f"Command validation failed: {e}",
+            return_code=-1,
+        )
+
     # Ensure sandbox exists
     sandbox_path = Path(sandbox_root).resolve()
     sandbox_path.mkdir(parents=True, exist_ok=True)
@@ -258,18 +275,15 @@ def validate_sandbox_path(path: str, sandbox_root: str = SANDBOX_DIR) -> bool:
     Returns:
         True if path is valid and within sandbox
     """
+    # Quick check for path traversal patterns
+    if contains_path_traversal(path):
+        return False
+
     try:
-        sandbox_path = Path(sandbox_root).resolve()
-        # Handle both absolute and relative paths
-        if Path(path).is_absolute():
-            target_path = Path(path).resolve()
-        else:
-            target_path = (sandbox_path / path).resolve()
-
-        # Check if target is within sandbox
-        return str(target_path).startswith(str(sandbox_path))
-
-    except (ValueError, OSError):
+        # Use centralized validation
+        validate_path(path, sandbox_root=sandbox_root)
+        return True
+    except ValidationError:
         return False
 
 

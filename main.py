@@ -30,6 +30,13 @@ from utils.logger import (
     log_shutdown,
     log_user_decision,
 )
+from utils.validation import (
+    ValidationError,
+    validate_prompt,
+    validate_user_choice,
+    validate_response,
+    truncate_response,
+)
 
 
 def main() -> None:
@@ -88,6 +95,13 @@ def main() -> None:
             print("\nNo input provided. Exiting.")
             return
 
+    # Validate the initial prompt
+    try:
+        current_prompt = validate_prompt(current_prompt)
+    except ValidationError as e:
+        print(f"Invalid prompt: {e}")
+        return
+
     # Main loop
     try:
         while True:
@@ -137,11 +151,19 @@ def process_iteration(
         Next prompt or None to exit
     """
     try:
+        # Validate prompt before sending
+        try:
+            prompt = validate_prompt(prompt)
+        except ValidationError as e:
+            print(f"\n[Error]: Invalid prompt - {e}")
+            return get_next_prompt()
+
         # Get Claude's response
         print(f"\n[Prompt]: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
         print("[Thinking...]")
 
         claude_reply = get_response(prompt)
+        claude_reply = validate_response(claude_reply)
         display_response(claude_reply)
 
         # Classify the action
@@ -202,12 +224,17 @@ def handle_user_action(
     Returns:
         Next prompt, modified prompt, or None to exit
     """
-    print(f"\n⚠️  User action required: {decision.reason}")
+    print(f"\n[!] User action required: {decision.reason}")
     if decision.command:
         print(f"Command: {decision.command}")
 
+    valid_choices = {"y", "m", "s", "q"}
     try:
         user_input = input("\nApprove (y), modify (m), skip (s), quit (q): ").strip().lower()
+        user_input = validate_user_choice(user_input, valid_choices)
+    except ValidationError:
+        print("Invalid choice. Skipping.")
+        user_input = "s"
     except EOFError:
         return None
 
@@ -256,11 +283,7 @@ def display_response(response: str) -> None:
         response: Response text to display
     """
     print("\n[Claude]:")
-    if len(response) > MAX_REPLY_LENGTH:
-        print(response[:MAX_REPLY_LENGTH])
-        print(f"\n... (truncated, {len(response)} total characters)")
-    else:
-        print(response)
+    print(truncate_response(response, MAX_REPLY_LENGTH))
 
 
 def build_continuation_prompt(previous_response: str, result: ExecutionResult) -> str:

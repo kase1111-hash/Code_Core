@@ -12,6 +12,7 @@ from typing import Optional
 
 from core.ollama import run_prompt, OllamaError
 from utils.config import is_dangerous_keyword, MAX_REPLY_LENGTH
+from utils.validation import validate_risk_level, sanitize_string
 
 CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
 
@@ -51,6 +52,9 @@ def classify(response: str) -> Decision:
     Returns:
         Decision object with action, reason, command, risk_level
     """
+    # Sanitize the response first
+    response = sanitize_string(response)
+
     # First, try to extract any command from the response
     extracted_command = extract_command(response)
 
@@ -77,9 +81,7 @@ def classify(response: str) -> Decision:
 
             reason = parsed.get("reason", "Classified by Ollama")
             command = parsed.get("command") or extracted_command
-            risk_level = parsed.get("risk_level", "medium")
-            if risk_level not in ("low", "medium", "high"):
-                risk_level = "medium"
+            risk_level = validate_risk_level(parsed.get("risk_level", "medium"))
 
             # Double-check for dangerous keywords in command
             if command and is_dangerous_keyword(command):
