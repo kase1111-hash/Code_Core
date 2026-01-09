@@ -6,8 +6,11 @@ actionable decisions with risk assessment.
 """
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Optional
+
+from core.ollama import run_prompt, OllamaError
 
 DANGEROUS_KEYWORDS = [
     "deploy",
@@ -16,7 +19,27 @@ DANGEROUS_KEYWORDS = [
     "sudo",
     "rm -rf",
     "chmod",
+    "chown",
+    "curl",
+    "wget",
 ]
+
+CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
+
+Response to analyze:
+"""
+{claude_reply}
+"""
+
+Output ONLY valid JSON (no markdown, no explanation):
+{{"action": "auto" or "user", "reason": "brief explanation", "command": "extracted command or null", "risk_level": "low" or "medium" or "high"}}
+
+Rules:
+- "auto": Safe operations (run tests, generate code, read files, write to sandbox)
+- "user": Dangerous operations (git push, deploy, delete, modify system files)
+- Always "user" for: deploy, production, push, sudo, rm -rf, chmod
+- risk_level: "low" for read-only, "medium" for sandbox writes, "high" for system changes
+'''
 
 
 @dataclass
@@ -25,7 +48,7 @@ class Decision:
 
     action: str  # "auto" | "user"
     reason: str  # Explanation for the decision
-    command: str  # Command to execute
+    command: Optional[str]  # Command to execute
     risk_level: str  # "low" | "medium" | "high"
 
 
@@ -39,17 +62,134 @@ def classify(response: str) -> Decision:
     Returns:
         Decision object with action, reason, command, risk_level
     """
-    # TODO: Implement in Core Implementation phase
-    raise NotImplementedError("Implementation pending")
+    # First, try to extract any command from the response
+    extracted_command = _extract_command(response)
+
+    # Check for dangerous keywords in the response
+    if _check_dangerous_keywords(response):
+        return Decision(
+            action="user",
+            reason="Contains dangerous keyword",
+            command=extracted_command,
+            risk_level="high",
+        )
+
+    # Try to classify using Ollama
+    try:
+        prompt = CLASSIFICATION_PROMPT.format(claude_reply=response[:2000])
+        ollama_response = run_prompt(prompt)
+        parsed = _parse_json(ollama_response)
+
+        if parsed:
+            # Validate and extract fields
+            action = parsed.get("action", "user")
+            if action not in ("auto", "user"):
+                action = "user"
+
+            reason = parsed.get("reason", "Classified by Ollama")
+            command = parsed.get("command") or extracted_command
+            risk_level = parsed.get("risk_level", "medium")
+            if risk_level not in ("low", "medium", "high"):
+                risk_level = "medium"
+
+            # Double-check for dangerous keywords in command
+            if command and _check_dangerous_keywords(command):
+                action = "user"
+                risk_level = "high"
+
+            return Decision(
+                action=action,
+                reason=reason,
+                command=command,
+                risk_level=risk_level,
+            )
+
+    except OllamaError:
+        # Fall back to conservative classification
+        pass
+
+    # Default: require user action (safe fallback)
+    return Decision(
+        action="user",
+        reason="Unable to classify automatically",
+        command=extracted_command,
+        risk_level="medium",
+    )
 
 
-def _parse_json(response: str) -> dict:
-    """Parse JSON from Claude response."""
-    # TODO: Implement in Core Implementation phase
-    raise NotImplementedError("Implementation pending")
+def _parse_json(response: str) -> Optional[dict]:
+    """
+    Parse JSON from Claude/Ollama response.
+
+    Args:
+        response: Response text that may contain JSON
+
+    Returns:
+        Parsed dictionary or None if parsing fails
+    """
+    # Try direct parse first
+    try:
+        return json.loads(response.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Try to find JSON in the response
+    # Look for {...} pattern
+    json_match = re.search(r'\{[^{}]*\}', response, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group())
+        except json.JSONDecodeError:
+            pass
+
+    # Try to find JSON in code blocks
+    code_block_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+    if code_block_match:
+        try:
+            return json.loads(code_block_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 
-def _check_dangerous_keywords(command: str) -> bool:
-    """Check if command contains dangerous keywords."""
-    # TODO: Implement in Core Implementation phase
-    raise NotImplementedError("Implementation pending")
+def _check_dangerous_keywords(text: str) -> bool:
+    """
+    Check if text contains dangerous keywords.
+
+    Args:
+        text: Text to check
+
+    Returns:
+        True if dangerous keywords found
+    """
+    text_lower = text.lower()
+    return any(keyword.lower() in text_lower for keyword in DANGEROUS_KEYWORDS)
+
+
+def _extract_command(response: str) -> Optional[str]:
+    """
+    Extract command from Claude response.
+
+    Args:
+        response: Claude's response text
+
+    Returns:
+        Extracted command or None
+    """
+    # Look for shell code blocks
+    shell_match = re.search(r'```(?:bash|sh|shell|zsh)?\s*\n(.*?)\n```', response, re.DOTALL)
+    if shell_match:
+        return shell_match.group(1).strip()
+
+    # Look for inline commands with $ prefix
+    cmd_match = re.search(r'\$\s*(.+?)(?:\n|$)', response)
+    if cmd_match:
+        return cmd_match.group(1).strip()
+
+    # Look for "run:" or "execute:" patterns
+    run_match = re.search(r'(?:run|execute|command):\s*[`"]?(.+?)[`"]?(?:\n|$)', response, re.IGNORECASE)
+    if run_match:
+        return run_match.group(1).strip()
+
+    return None
