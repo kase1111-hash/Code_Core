@@ -50,9 +50,9 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Write system/acceptance tests
 
- Add regression test suite
+✅ Add regression test suite
 
- Conduct performance testing (load, stress)
+✅ Conduct performance testing (load, stress)
 
  Perform security checks (input, encryption, tokens)
 
