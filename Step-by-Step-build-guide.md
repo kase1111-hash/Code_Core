@@ -12,7 +12,7 @@
 
 ✅ Set up project structure (src/, tests/, docs/)
 
- Define coding conventions & style guide
+✅ Define coding conventions & style guide
 
  Create dependency manifest (package.json, requirements.txt)
 
