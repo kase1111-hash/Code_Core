@@ -18,7 +18,7 @@
 
 ✅ Configure environment management (Docker, venv, etc.)
 
- Write initial README.md
+✅ Write initial README.md
 
 ⚙️ Core Implementation
 
