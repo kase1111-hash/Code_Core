@@ -92,7 +92,7 @@ ehthumbs.db
 Desktop.ini
 
 # Logs
-logs/*.log
+logs/
 *.log
 
 # Sandbox contents (keep directory structure)
