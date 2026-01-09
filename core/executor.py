@@ -21,6 +21,7 @@ from utils.validation import (
     validate_path,
     contains_path_traversal,
 )
+from utils.errors import ErrorCode
 
 
 @dataclass

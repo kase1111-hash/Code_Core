@@ -37,6 +37,13 @@ from utils.validation import (
     validate_response,
     truncate_response,
 )
+from utils.errors import (
+    HarnessError,
+    format_error_for_user,
+    is_recoverable,
+    get_recovery_suggestion,
+    wrap_exception,
+)
 
 
 def main() -> None:
@@ -122,9 +129,19 @@ def main() -> None:
         print("\n\nInterrupted by user.")
         log_shutdown("keyboard_interrupt")
 
-    except Exception as e:
+    except HarnessError as e:
         log_error(e, "main_loop")
-        print(f"\nUnexpected error: {e}")
+        print(f"\n[Fatal Error]: {format_error_for_user(e)}")
+        suggestion = get_recovery_suggestion(e)
+        if suggestion:
+            print(f"[Suggestion]: {suggestion}")
+        log_shutdown("error")
+        sys.exit(1)
+
+    except Exception as e:
+        wrapped = wrap_exception(e, "main_loop")
+        log_error(wrapped, "main_loop")
+        print(f"\n[Fatal Error]: {format_error_for_user(wrapped)}")
         log_shutdown("error")
         sys.exit(1)
 
@@ -199,12 +216,26 @@ def process_iteration(
 
     except ClaudeError as e:
         log_error(e, "get_response")
-        print(f"\n[Error]: {e}")
+        print(f"\n[Error]: {format_error_for_user(e)}")
+        suggestion = get_recovery_suggestion(wrap_exception(e, "get_response"))
+        if suggestion:
+            print(f"[Suggestion]: {suggestion}")
         return get_next_prompt()
 
-    except Exception as e:
+    except HarnessError as e:
         log_error(e, "process_iteration")
-        print(f"\n[Error]: {e}")
+        print(f"\n[Error]: {format_error_for_user(e)}")
+        if is_recoverable(e):
+            suggestion = get_recovery_suggestion(e)
+            if suggestion:
+                print(f"[Suggestion]: {suggestion}")
+            return get_next_prompt()
+        return None
+
+    except Exception as e:
+        wrapped = wrap_exception(e, "process_iteration")
+        log_error(wrapped, "process_iteration")
+        print(f"\n[Error]: {format_error_for_user(wrapped)}")
         return get_next_prompt()
 
 

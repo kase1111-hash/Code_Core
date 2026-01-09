@@ -16,12 +16,22 @@ from utils.config import (
     MAX_RETRIES,
     RETRY_DELAY,
 )
+from utils.errors import (
+    ServiceError,
+    ErrorCode,
+    ErrorContext,
+)
 
 
-class OllamaError(Exception):
+class OllamaError(ServiceError):
     """Raised when Ollama command fails after all retries."""
 
-    pass
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.OLLAMA_ERROR):
+        super().__init__(
+            message,
+            code=code,
+            context=ErrorContext(operation="ollama_run"),
+        )
 
 
 def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
@@ -61,12 +71,14 @@ def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
 
         except subprocess.TimeoutExpired:
             last_error = OllamaError(
-                f"Ollama timed out after {OLLAMA_TIMEOUT} seconds"
+                f"Ollama timed out after {OLLAMA_TIMEOUT} seconds",
+                code=ErrorCode.OLLAMA_TIMEOUT,
             )
 
         except FileNotFoundError:
             raise OllamaError(
-                "Ollama not found. Please install Ollama: https://ollama.ai"
+                "Ollama not found. Please install Ollama: https://ollama.ai",
+                code=ErrorCode.OLLAMA_NOT_FOUND,
             )
 
         except subprocess.SubprocessError as e:
@@ -135,5 +147,6 @@ def list_models() -> list[str]:
 
     except FileNotFoundError:
         raise OllamaError(
-            "Ollama not found. Please install Ollama: https://ollama.ai"
+            "Ollama not found. Please install Ollama: https://ollama.ai",
+            code=ErrorCode.OLLAMA_NOT_FOUND,
         )

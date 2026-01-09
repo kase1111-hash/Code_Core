@@ -5,6 +5,7 @@ Modules:
     config: Centralized configuration
     logger: Audit trail and error logging
     validation: Input validation and sanitation
+    errors: Centralized error handling
 """
 
 from utils.logger import setup_logger, log_action, log_error
@@ -36,6 +37,21 @@ from utils.validation import (
     truncate_response,
     validate_user_choice,
     sanitize_log_message,
+)
+from utils.errors import (
+    ErrorCode,
+    ErrorSeverity,
+    ErrorContext,
+    HarnessError,
+    ConfigurationError,
+    ExecutionError,
+    SafetyError,
+    ServiceError,
+    format_error_for_user,
+    format_error_for_log,
+    is_recoverable,
+    get_recovery_suggestion,
+    wrap_exception,
 )
 
 __all__ = [
@@ -70,4 +86,18 @@ __all__ = [
     "truncate_response",
     "validate_user_choice",
     "sanitize_log_message",
+    # Errors
+    "ErrorCode",
+    "ErrorSeverity",
+    "ErrorContext",
+    "HarnessError",
+    "ConfigurationError",
+    "ExecutionError",
+    "SafetyError",
+    "ServiceError",
+    "format_error_for_user",
+    "format_error_for_log",
+    "is_recoverable",
+    "get_recovery_suggestion",
+    "wrap_exception",
 ]

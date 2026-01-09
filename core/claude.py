@@ -10,12 +10,22 @@ from typing import Optional
 
 from core.ollama import run_prompt as ollama_run_prompt, OllamaError
 from utils.config import CLAUDE_MODEL, CLAUDE_MAX_TOKENS, OLLAMA_MODEL
+from utils.errors import (
+    ServiceError,
+    ErrorCode,
+    ErrorContext,
+)
 
 
-class ClaudeError(Exception):
+class ClaudeError(ServiceError):
     """Raised when Claude API call fails."""
 
-    pass
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.CLAUDE_ERROR):
+        super().__init__(
+            message,
+            code=code,
+            context=ErrorContext(operation="claude_api"),
+        )
 
 
 def get_response(prompt: str, use_api: Optional[bool] = None) -> str:
@@ -36,7 +46,10 @@ def get_response(prompt: str, use_api: Optional[bool] = None) -> str:
     if use_api is None:
         use_api = bool(api_key)
     elif use_api and not api_key:
-        raise ClaudeError("API usage requested but ANTHROPIC_API_KEY not set")
+        raise ClaudeError(
+            "API usage requested but ANTHROPIC_API_KEY not set",
+            code=ErrorCode.CLAUDE_AUTH_ERROR,
+        )
 
     if use_api:
         return _call_api(prompt)
@@ -81,12 +94,15 @@ def _call_api(prompt: str) -> str:
 
     except ImportError:
         raise ClaudeError(
-            "anthropic package not installed. "
-            "Install with: pip install anthropic"
+            "anthropic package not installed. Install with: pip install anthropic",
+            code=ErrorCode.CONFIGURATION,
         )
 
     except APIError as e:
-        raise ClaudeError(f"Claude API error: {e}")
+        raise ClaudeError(
+            f"Claude API error: {e}",
+            code=ErrorCode.CLAUDE_API_ERROR,
+        )
 
     except Exception as e:
         raise ClaudeError(f"Unexpected error calling Claude: {e}")
