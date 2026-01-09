@@ -6,15 +6,15 @@ directory with path validation and timeout handling.
 """
 
 import os
-import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-SANDBOX_DIR = "./sandbox"
-TIMEOUT = 30
-ALLOWED_EXTENSIONS = [".py", ".txt", ".json", ".yaml", ".md", ".sh"]
+from utils.config import (
+    SANDBOX_DIR,
+    COMMAND_TIMEOUT,
+    is_allowed_extension,
+)
 
 
 @dataclass
@@ -50,7 +50,7 @@ def execute(command: str, sandbox_root: str = SANDBOX_DIR) -> ExecutionResult:
             cwd=str(sandbox_path),
             capture_output=True,
             text=True,
-            timeout=TIMEOUT,
+            timeout=COMMAND_TIMEOUT,
             env=_get_safe_env(),
         )
 
@@ -65,7 +65,7 @@ def execute(command: str, sandbox_root: str = SANDBOX_DIR) -> ExecutionResult:
         return ExecutionResult(
             success=False,
             output="",
-            error=f"Command timed out after {TIMEOUT} seconds",
+            error=f"Command timed out after {COMMAND_TIMEOUT} seconds",
             return_code=-1,
         )
 
@@ -101,7 +101,7 @@ def execute_sandboxed(
             cwd=str(sandbox_path),
             capture_output=True,
             text=True,
-            timeout=TIMEOUT,
+            timeout=COMMAND_TIMEOUT,
             env=_get_safe_env(),
         )
 
@@ -116,7 +116,7 @@ def execute_sandboxed(
         return ExecutionResult(
             success=False,
             output="",
-            error=f"Command timed out after {TIMEOUT} seconds",
+            error=f"Command timed out after {COMMAND_TIMEOUT} seconds",
             return_code=-1,
         )
 
@@ -153,7 +153,7 @@ def write_file_sandboxed(
     Returns:
         ExecutionResult indicating success or failure
     """
-    if not _validate_path(path, sandbox_root):
+    if not validate_sandbox_path(path, sandbox_root):
         return ExecutionResult(
             success=False,
             output="",
@@ -161,7 +161,7 @@ def write_file_sandboxed(
             return_code=-1,
         )
 
-    if not _is_allowed_extension(path):
+    if not is_allowed_extension(path):
         return ExecutionResult(
             success=False,
             output="",
@@ -209,7 +209,7 @@ def read_file_sandboxed(
     Returns:
         ExecutionResult with file content in output
     """
-    if not _validate_path(path, sandbox_root):
+    if not validate_sandbox_path(path, sandbox_root):
         return ExecutionResult(
             success=False,
             output="",
@@ -247,7 +247,7 @@ def read_file_sandboxed(
         )
 
 
-def _validate_path(path: str, sandbox_root: str = SANDBOX_DIR) -> bool:
+def validate_sandbox_path(path: str, sandbox_root: str = SANDBOX_DIR) -> bool:
     """
     Validate that path stays within sandbox.
 
@@ -271,23 +271,6 @@ def _validate_path(path: str, sandbox_root: str = SANDBOX_DIR) -> bool:
 
     except (ValueError, OSError):
         return False
-
-
-def _is_allowed_extension(path: str) -> bool:
-    """
-    Check if file extension is in whitelist.
-
-    Args:
-        path: File path to check
-
-    Returns:
-        True if extension is allowed
-    """
-    suffix = Path(path).suffix.lower()
-    # Allow files without extension (like Makefile)
-    if not suffix:
-        return True
-    return suffix in ALLOWED_EXTENSIONS
 
 
 def _get_safe_env() -> dict[str, str]:

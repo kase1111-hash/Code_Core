@@ -15,6 +15,13 @@ from core.claude import get_response, ClaudeError, get_model_info
 from core.classifier import classify, Decision
 from core.executor import execute, ExecutionResult
 from core.safety import PermissionManager
+from utils.config import (
+    SANDBOX_DIR,
+    PERMISSIONS_FILE,
+    LOOP_DELAY,
+    MAX_REPLY_LENGTH,
+    ensure_directories,
+)
 from utils.logger import (
     setup_logger,
     log_action,
@@ -23,10 +30,6 @@ from utils.logger import (
     log_shutdown,
     log_user_decision,
 )
-
-LOOP_DELAY = 1.0  # seconds
-MAX_REPLY_LENGTH = 2000
-SANDBOX_ROOT = "./sandbox"
 
 
 def main() -> None:
@@ -43,13 +46,13 @@ def main() -> None:
     parser.add_argument(
         "--config",
         type=str,
-        default="config/permissions.yaml",
+        default=PERMISSIONS_FILE,
         help="Path to permissions config file",
     )
     parser.add_argument(
         "--sandbox",
         type=str,
-        default=SANDBOX_ROOT,
+        default=SANDBOX_DIR,
         help="Path to sandbox directory",
     )
     parser.add_argument(
@@ -60,13 +63,14 @@ def main() -> None:
     args = parser.parse_args()
 
     # Initialize
+    ensure_directories()
     setup_logger()
     log_startup()
     permissions = PermissionManager(args.config)
 
     # Display configuration
     model_info = get_model_info()
-    print(f"Ollama Automation Harness")
+    print("Ollama Automation Harness")
     print(f"Mode: {model_info['mode']} ({model_info['model']})")
     print(f"Sandbox: {args.sandbox}")
     print("-" * 40)
@@ -156,7 +160,7 @@ def process_iteration(
                 log_action("auto_exec", decision, result)
 
                 if result.success:
-                    print(f"\n[Result]: Success")
+                    print("\n[Result]: Success")
                     if verbose and result.output:
                         print(result.output[:500])
                 else:
@@ -219,7 +223,7 @@ def handle_user_action(
             log_action("user_approved", decision, result, "y")
 
             if result.success:
-                print(f"\n[Result]: Success")
+                print("\n[Result]: Success")
                 if result.output:
                     print(result.output[:500])
             else:

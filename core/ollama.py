@@ -9,10 +9,13 @@ import subprocess
 import time
 from typing import Optional
 
-DEFAULT_MODEL = "llama3"
-TIMEOUT = 60
-MAX_RETRIES = 3
-RETRY_DELAY = 1.0  # seconds between retries
+from utils.config import (
+    OLLAMA_MODEL,
+    OLLAMA_TIMEOUT,
+    OLLAMA_CHECK_TIMEOUT,
+    MAX_RETRIES,
+    RETRY_DELAY,
+)
 
 
 class OllamaError(Exception):
@@ -21,13 +24,13 @@ class OllamaError(Exception):
     pass
 
 
-def run_prompt(prompt: str, model: str = DEFAULT_MODEL) -> str:
+def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
     """
     Execute a prompt using Ollama CLI.
 
     Args:
         prompt: The prompt to send to Ollama
-        model: Model name (default: "llama3")
+        model: Model name (default from config)
 
     Returns:
         Response text from Ollama
@@ -44,7 +47,7 @@ def run_prompt(prompt: str, model: str = DEFAULT_MODEL) -> str:
                 input=prompt,
                 capture_output=True,
                 text=True,
-                timeout=TIMEOUT,
+                timeout=OLLAMA_TIMEOUT,
             )
 
             if result.returncode == 0:
@@ -57,7 +60,9 @@ def run_prompt(prompt: str, model: str = DEFAULT_MODEL) -> str:
             )
 
         except subprocess.TimeoutExpired:
-            last_error = OllamaError(f"Ollama timed out after {TIMEOUT} seconds")
+            last_error = OllamaError(
+                f"Ollama timed out after {OLLAMA_TIMEOUT} seconds"
+            )
 
         except FileNotFoundError:
             raise OllamaError(
@@ -89,7 +94,7 @@ def check_ollama_available() -> bool:
             ["ollama", "list"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=OLLAMA_CHECK_TIMEOUT,
         )
         return result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
@@ -111,7 +116,7 @@ def list_models() -> list[str]:
             ["ollama", "list"],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=OLLAMA_CHECK_TIMEOUT,
         )
 
         if result.returncode != 0:

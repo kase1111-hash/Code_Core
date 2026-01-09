@@ -8,16 +8,8 @@ with automatic fallback to Ollama when API key is not available.
 import os
 from typing import Optional
 
-from dotenv import load_dotenv
-
 from core.ollama import run_prompt as ollama_run_prompt, OllamaError
-
-# Load environment variables
-load_dotenv()
-
-MODEL = "claude-sonnet-4-20250514"
-MAX_TOKENS = 4096
-FALLBACK_MODEL = "llama3"
+from utils.config import CLAUDE_MODEL, CLAUDE_MAX_TOKENS, OLLAMA_MODEL
 
 
 class ClaudeError(Exception):
@@ -71,8 +63,8 @@ def _call_api(prompt: str) -> str:
         client = Anthropic()
 
         message = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
+            model=CLAUDE_MODEL,
+            max_tokens=CLAUDE_MAX_TOKENS,
             messages=[
                 {
                     "role": "user",
@@ -114,7 +106,7 @@ def _fallback_ollama(prompt: str) -> str:
         ClaudeError: If Ollama fallback fails
     """
     try:
-        return ollama_run_prompt(prompt, model=FALLBACK_MODEL)
+        return ollama_run_prompt(prompt, model=OLLAMA_MODEL)
     except OllamaError as e:
         raise ClaudeError(f"Ollama fallback failed: {e}")
 
@@ -140,7 +132,7 @@ def get_model_info() -> dict[str, str]:
 
     return {
         "mode": "api" if api_key else "fallback",
-        "model": MODEL if api_key else FALLBACK_MODEL,
-        "max_tokens": str(MAX_TOKENS),
+        "model": CLAUDE_MODEL if api_key else OLLAMA_MODEL,
+        "max_tokens": str(CLAUDE_MAX_TOKENS),
         "api_key_set": "yes" if api_key else "no",
     }

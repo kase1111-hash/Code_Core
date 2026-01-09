@@ -11,18 +11,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from core.ollama import run_prompt, OllamaError
-
-DANGEROUS_KEYWORDS = [
-    "deploy",
-    "production",
-    "push",
-    "sudo",
-    "rm -rf",
-    "chmod",
-    "chown",
-    "curl",
-    "wget",
-]
+from utils.config import is_dangerous_keyword, MAX_REPLY_LENGTH
 
 CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
 
@@ -63,10 +52,10 @@ def classify(response: str) -> Decision:
         Decision object with action, reason, command, risk_level
     """
     # First, try to extract any command from the response
-    extracted_command = _extract_command(response)
+    extracted_command = extract_command(response)
 
     # Check for dangerous keywords in the response
-    if _check_dangerous_keywords(response):
+    if is_dangerous_keyword(response):
         return Decision(
             action="user",
             reason="Contains dangerous keyword",
@@ -76,9 +65,9 @@ def classify(response: str) -> Decision:
 
     # Try to classify using Ollama
     try:
-        prompt = CLASSIFICATION_PROMPT.format(claude_reply=response[:2000])
+        prompt = CLASSIFICATION_PROMPT.format(claude_reply=response[:MAX_REPLY_LENGTH])
         ollama_response = run_prompt(prompt)
-        parsed = _parse_json(ollama_response)
+        parsed = parse_json_response(ollama_response)
 
         if parsed:
             # Validate and extract fields
@@ -93,7 +82,7 @@ def classify(response: str) -> Decision:
                 risk_level = "medium"
 
             # Double-check for dangerous keywords in command
-            if command and _check_dangerous_keywords(command):
+            if command and is_dangerous_keyword(command):
                 action = "user"
                 risk_level = "high"
 
@@ -117,7 +106,7 @@ def classify(response: str) -> Decision:
     )
 
 
-def _parse_json(response: str) -> Optional[dict]:
+def parse_json_response(response: str) -> Optional[dict]:
     """
     Parse JSON from Claude/Ollama response.
 
@@ -153,21 +142,7 @@ def _parse_json(response: str) -> Optional[dict]:
     return None
 
 
-def _check_dangerous_keywords(text: str) -> bool:
-    """
-    Check if text contains dangerous keywords.
-
-    Args:
-        text: Text to check
-
-    Returns:
-        True if dangerous keywords found
-    """
-    text_lower = text.lower()
-    return any(keyword.lower() in text_lower for keyword in DANGEROUS_KEYWORDS)
-
-
-def _extract_command(response: str) -> Optional[str]:
+def extract_command(response: str) -> Optional[str]:
     """
     Extract command from Claude response.
 
