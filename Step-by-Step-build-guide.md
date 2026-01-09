@@ -44,7 +44,7 @@ N/A Add accessibility & localization support (CLI application)
 
 🧪 Testing & Validation
 
- Write unit tests
+✅ Write unit tests
 
  Write integration tests
 
