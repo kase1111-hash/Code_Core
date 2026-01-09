@@ -7,6 +7,7 @@ Modules:
     validation: Input validation and sanitation
     errors: Centralized error handling
     error_tracking: Sentry/ELK error tracking integration
+    secrets: Secure configuration and secrets management
 """
 
 from utils.logger import (
@@ -95,6 +96,20 @@ from utils.error_tracking import (
     format_for_elk,
     get_elk_index_template,
 )
+from utils.secrets import (
+    Environment,
+    SecureConfig,
+    ConfigValidationError,
+    get_secure_config,
+    init_secure_config,
+    get_api_key,
+    has_api_key,
+    mask_secret,
+    mask_url_credentials,
+    mask_dict_secrets,
+    validate_config_on_startup,
+    check_environment_security,
+)
 
 __all__ = [
     # Logger
@@ -178,4 +193,17 @@ __all__ = [
     "capture_errors",
     "format_for_elk",
     "get_elk_index_template",
+    # Secrets
+    "Environment",
+    "SecureConfig",
+    "ConfigValidationError",
+    "get_secure_config",
+    "init_secure_config",
+    "get_api_key",
+    "has_api_key",
+    "mask_secret",
+    "mask_url_credentials",
+    "mask_dict_secrets",
+    "validate_config_on_startup",
+    "check_environment_security",
 ]

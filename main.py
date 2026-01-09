@@ -48,6 +48,10 @@ from utils.error_tracking import (
     init_error_tracking,
     capture_exception,
 )
+from utils.secrets import (
+    init_secure_config,
+    get_secure_config,
+)
 
 
 def main() -> None:
@@ -83,14 +87,17 @@ def main() -> None:
     # Initialize
     ensure_directories()
     setup_logger()
+    init_secure_config()  # Initialize secure configuration
     init_error_tracking()  # Initialize Sentry/ELK error tracking
     log_startup()
     permissions = PermissionManager(args.config)
 
     # Display configuration
     model_info = get_model_info()
+    secure_config = get_secure_config()
     print("Ollama Automation Harness")
     print(f"Mode: {model_info['mode']} ({model_info['model']})")
+    print(f"Environment: {secure_config.environment.value}")
     print(f"Sandbox: {args.sandbox}")
     print("-" * 40)
 
