@@ -6,7 +6,7 @@
 
 ✅ Choose tech stack & dependencies
 
- Design architecture (system, data flow, API)
+✅ Design architecture (system, data flow, API)
 
  Initialize version control (Git)
 
