@@ -9,3 +9,6 @@ PyYAML>=6.0
 
 # Environment variable management
 python-dotenv>=1.0.0
+
+# Error tracking (optional - for Sentry integration)
+sentry-sdk>=1.40.0

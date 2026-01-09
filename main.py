@@ -11,6 +11,8 @@ import sys
 import time
 from typing import Optional
 
+__version__ = "0.1.0"
+
 from core.claude import get_response, ClaudeError, get_model_info
 from core.classifier import classify, Decision
 from core.executor import execute, ExecutionResult
@@ -44,29 +46,53 @@ from utils.errors import (
     get_recovery_suggestion,
     wrap_exception,
 )
+from utils.error_tracking import (
+    init_error_tracking,
+    capture_exception,
+)
+from utils.secrets import (
+    init_secure_config,
+    get_secure_config,
+)
 
 
 def main() -> None:
     """Main entry point for the automation harness."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Ollama Automation Harness - AI-powered development automation"
+        prog="ollama-harness",
+        description="Ollama Automation Harness - AI-powered development automation",
+        epilog="For more options, use the 'cli.py' entry point with subcommands.",
+    )
+    parser.add_argument(
+        "-V", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "-p", "--prompt",
         type=str,
+        metavar="TEXT",
         help="Initial prompt (if not provided, will prompt interactively)",
+    )
+    parser.add_argument(
+        "-f", "--file",
+        type=str,
+        metavar="PATH",
+        help="Read prompt from file",
     )
     parser.add_argument(
         "--config",
         type=str,
         default=PERMISSIONS_FILE,
+        metavar="PATH",
         help="Path to permissions config file",
     )
     parser.add_argument(
         "--sandbox",
         type=str,
         default=SANDBOX_DIR,
+        metavar="PATH",
         help="Path to sandbox directory",
     )
     parser.add_argument(
@@ -74,20 +100,39 @@ def main() -> None:
         action="store_true",
         help="Enable verbose output",
     )
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="Suppress non-essential output",
+    )
     args = parser.parse_args()
+
+    # Read prompt from file if specified
+    if args.file:
+        try:
+            with open(args.file) as f:
+                args.prompt = f.read().strip()
+        except OSError as e:
+            print(f"Error reading prompt file: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Initialize
     ensure_directories()
     setup_logger()
+    init_secure_config()  # Initialize secure configuration
+    init_error_tracking()  # Initialize Sentry/ELK error tracking
     log_startup()
     permissions = PermissionManager(args.config)
 
     # Display configuration
     model_info = get_model_info()
-    print("Ollama Automation Harness")
-    print(f"Mode: {model_info['mode']} ({model_info['model']})")
-    print(f"Sandbox: {args.sandbox}")
-    print("-" * 40)
+    secure_config = get_secure_config()
+    if not args.quiet:
+        print(f"Ollama Automation Harness v{__version__}")
+        print(f"Mode: {model_info['mode']} ({model_info['model']})")
+        print(f"Environment: {secure_config.environment.value}")
+        print(f"Sandbox: {args.sandbox}")
+        print("-" * 40)
 
     # Get initial prompt
     if args.prompt:
@@ -131,6 +176,7 @@ def main() -> None:
 
     except HarnessError as e:
         log_error(e, "main_loop")
+        capture_exception(e, context="main_loop")  # Send to Sentry/ELK
         print(f"\n[Fatal Error]: {format_error_for_user(e)}")
         suggestion = get_recovery_suggestion(e)
         if suggestion:
@@ -141,6 +187,7 @@ def main() -> None:
     except Exception as e:
         wrapped = wrap_exception(e, "main_loop")
         log_error(wrapped, "main_loop")
+        capture_exception(e, context="main_loop")  # Send to Sentry/ELK
         print(f"\n[Fatal Error]: {format_error_for_user(wrapped)}")
         log_shutdown("error")
         sys.exit(1)
@@ -216,6 +263,7 @@ def process_iteration(
 
     except ClaudeError as e:
         log_error(e, "get_response")
+        capture_exception(e, context="get_response")
         print(f"\n[Error]: {format_error_for_user(e)}")
         suggestion = get_recovery_suggestion(wrap_exception(e, "get_response"))
         if suggestion:
@@ -224,6 +272,7 @@ def process_iteration(
 
     except HarnessError as e:
         log_error(e, "process_iteration")
+        capture_exception(e, context="process_iteration")
         print(f"\n[Error]: {format_error_for_user(e)}")
         if is_recoverable(e):
             suggestion = get_recovery_suggestion(e)
@@ -235,6 +284,7 @@ def process_iteration(
     except Exception as e:
         wrapped = wrap_exception(e, "process_iteration")
         log_error(wrapped, "process_iteration")
+        capture_exception(e, context="process_iteration")
         print(f"\n[Error]: {format_error_for_user(wrapped)}")
         return get_next_prompt()
 
