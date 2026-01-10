@@ -88,7 +88,7 @@ N/A Add accessibility & localization support (CLI application)
 
 🔐 Finalization & Compliance
 
- Conduct manual exploratory testing
+✅ Conduct manual exploratory testing
 
  Peer review / code audit
 
