@@ -1,7 +1,7 @@
 # Ollama Automation Harness - Makefile
 # Run 'make help' to see available commands
 
-.PHONY: help install install-dev venv clean lint format typecheck test coverage run docker-build docker-run
+.PHONY: help install install-dev venv clean lint format typecheck test coverage run docker-build docker-run package-zip package-exe package-docker package-docker-save package-all
 
 # Default Python
 PYTHON := python3
@@ -197,11 +197,36 @@ ci: ci-lint ci-test ci-security ## Run all CI checks
 # Build & Package
 # =============================================================================
 
-build: ## Build distribution packages
+build: ## Build distribution packages (wheel)
 	@echo "$(BLUE)Building distribution packages...$(NC)"
 	$(PYTHON) -m pip install --upgrade build
 	$(PYTHON) -m build
 	@echo "$(GREEN)Build complete - packages in dist/$(NC)"
+
+package-zip: ## Create zip distribution
+	@echo "$(BLUE)Creating zip distribution...$(NC)"
+	$(PYTHON) scripts/package.py zip
+	@echo "$(GREEN)Zip package created in dist/$(NC)"
+
+package-exe: ## Create standalone executable (PyInstaller)
+	@echo "$(BLUE)Creating standalone executable...$(NC)"
+	$(PYTHON) scripts/package.py exe
+	@echo "$(GREEN)Executable created in dist/$(NC)"
+
+package-docker: ## Build production Docker image
+	@echo "$(BLUE)Building production Docker image...$(NC)"
+	docker build -f Dockerfile.prod -t ollama-harness:latest .
+	@echo "$(GREEN)Docker image built$(NC)"
+
+package-docker-save: package-docker ## Build and save Docker image as tar
+	@echo "$(BLUE)Saving Docker image to tar...$(NC)"
+	$(PYTHON) scripts/package.py docker
+	@echo "$(GREEN)Docker image saved to dist/$(NC)"
+
+package-all: ## Create all distribution packages
+	@echo "$(BLUE)Creating all distribution packages...$(NC)"
+	$(PYTHON) scripts/package.py all
+	@echo "$(GREEN)All packages created in dist/$(NC)"
 
 dist-clean: ## Clean distribution artifacts
 	rm -rf dist/ build/ *.egg-info/

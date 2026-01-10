@@ -58,6 +58,10 @@ show_help() {
     echo "  run           Run the application"
     echo "  version       Show version"
     echo "  build         Build distribution packages"
+    echo "  package-zip   Create zip distribution"
+    echo "  package-exe   Create standalone executable"
+    echo "  package-docker Build production Docker image"
+    echo "  package-all   Create all distribution packages"
     echo "  ci            Run all CI checks"
     echo "  help          Show this help"
     echo ""
@@ -179,6 +183,31 @@ cmd_build() {
     echo -e "${GREEN}✓ Build complete - packages in dist/${NC}"
 }
 
+cmd_package_zip() {
+    echo -e "${BLUE}Creating zip distribution...${NC}"
+    $PYTHON scripts/package.py zip
+    echo -e "${GREEN}✓ Zip package created in dist/${NC}"
+}
+
+cmd_package_exe() {
+    echo -e "${BLUE}Creating standalone executable...${NC}"
+    $PYTHON -m pip install pyinstaller
+    $PYTHON scripts/package.py exe
+    echo -e "${GREEN}✓ Executable created in dist/${NC}"
+}
+
+cmd_package_docker() {
+    echo -e "${BLUE}Building production Docker image...${NC}"
+    docker build -f Dockerfile.prod -t ollama-harness:latest .
+    echo -e "${GREEN}✓ Docker image built${NC}"
+}
+
+cmd_package_all() {
+    echo -e "${BLUE}Creating all distribution packages...${NC}"
+    $PYTHON scripts/package.py all
+    echo -e "${GREEN}✓ All packages created in dist/${NC}"
+}
+
 cmd_ci() {
     echo -e "${BLUE}Running CI checks...${NC}"
     echo -e "${BLUE}[1/3] Linting...${NC}"
@@ -192,25 +221,29 @@ cmd_ci() {
 
 # Main
 case "${1:-help}" in
-    install)      cmd_install ;;
-    install-dev)  cmd_install_dev ;;
-    setup)        cmd_setup ;;
-    test)         cmd_test ;;
-    test-quick)   cmd_test_quick ;;
-    test-unit)    cmd_test_unit ;;
-    test-security) cmd_test_security ;;
-    test-perf)    cmd_test_perf ;;
-    test-dynamic) cmd_test_dynamic ;;
-    lint)         cmd_lint ;;
-    format)       cmd_format ;;
-    typecheck)    cmd_typecheck ;;
-    security)     cmd_security ;;
-    check)        cmd_check ;;
-    clean)        cmd_clean ;;
-    run)          cmd_run ;;
-    version)      cmd_version ;;
-    build)        cmd_build ;;
-    ci)           cmd_ci ;;
+    install)        cmd_install ;;
+    install-dev)    cmd_install_dev ;;
+    setup)          cmd_setup ;;
+    test)           cmd_test ;;
+    test-quick)     cmd_test_quick ;;
+    test-unit)      cmd_test_unit ;;
+    test-security)  cmd_test_security ;;
+    test-perf)      cmd_test_perf ;;
+    test-dynamic)   cmd_test_dynamic ;;
+    lint)           cmd_lint ;;
+    format)         cmd_format ;;
+    typecheck)      cmd_typecheck ;;
+    security)       cmd_security ;;
+    check)          cmd_check ;;
+    clean)          cmd_clean ;;
+    run)            cmd_run ;;
+    version)        cmd_version ;;
+    build)          cmd_build ;;
+    package-zip)    cmd_package_zip ;;
+    package-exe)    cmd_package_exe ;;
+    package-docker) cmd_package_docker ;;
+    package-all)    cmd_package_all ;;
+    ci)             cmd_ci ;;
     help|--help|-h) show_help ;;
     *)
         echo -e "${RED}Unknown command: $1${NC}"
