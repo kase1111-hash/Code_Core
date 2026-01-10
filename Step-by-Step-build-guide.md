@@ -76,7 +76,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Create installer or assembly file (.bat, setup wizard)
 
- Implement semantic versioning (v1.0.0)
+✅ Implement semantic versioning (v1.0.0)
 
  Automate deployment process
 

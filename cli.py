@@ -8,8 +8,9 @@ Provides subcommands for running, configuration, and diagnostics.
 import argparse
 import sys
 
-# Version information
-__version__ = "0.1.0"
+from utils.version import __version__, APP_NAME
+
+# Description for CLI
 __description__ = "AI-powered development automation with human oversight"
 
 
@@ -502,8 +503,14 @@ def cmd_version(args: argparse.Namespace) -> int:
     """
     import platform
 
-    print(f"Ollama Automation Harness v{__version__}")
+    from utils.version import get_version_info
+
+    info = get_version_info()
+
+    print(f"{info['app_name']} v{info['version']}")
     print("=" * 50)
+    print(f"Version:  {info['major']}.{info['minor']}.{info['patch']}")
+    print(f"License:  {info['license']}")
     print(f"Python:   {platform.python_version()}")
     print(f"Platform: {platform.system()} {platform.release()}")
     print(f"Machine:  {platform.machine()}")
