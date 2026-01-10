@@ -94,7 +94,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Run penetration test (internal or 3rd-party)
 
- Document APIs (Swagger / Postman)
+✅ Document APIs (Swagger / Postman)
 
  Create architecture & data flow diagrams
 
