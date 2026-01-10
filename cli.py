@@ -7,7 +7,6 @@ Provides subcommands for running, configuration, and diagnostics.
 
 import argparse
 import sys
-from typing import Optional
 
 # Version information
 __version__ = "0.1.0"
@@ -285,10 +284,10 @@ def cmd_config(args: argparse.Namespace) -> int:
     """
     from utils.config import get_config_dict
     from utils.secrets import (
-        init_secure_config,
-        get_secure_config,
-        validate_config_on_startup,
         check_environment_security,
+        get_secure_config,
+        init_secure_config,
+        validate_config_on_startup,
     )
 
     config_command = args.config_command
@@ -377,8 +376,9 @@ def cmd_config(args: argparse.Namespace) -> int:
 
     elif config_command == "path":
         # Show configuration paths
-        from utils.config import SANDBOX_DIR, PERMISSIONS_FILE, LOG_FILE
         from pathlib import Path
+
+        from utils.config import LOG_FILE, PERMISSIONS_FILE, SANDBOX_DIR
 
         print("Configuration File Paths")
         print("=" * 50)

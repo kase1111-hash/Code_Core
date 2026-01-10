@@ -60,7 +60,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Check for backdoors & unauthorized access
 
- Run static analysis (lint, type check, vuln scan)
+✅ Run static analysis (lint, type check, vuln scan)
 
  Run dynamic analysis (fuzzing, runtime behavior)
 

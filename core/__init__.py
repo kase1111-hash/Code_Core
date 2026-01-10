@@ -9,10 +9,10 @@ Modules:
     safety: Permission management
 """
 
-from core.ollama import run_prompt, OllamaError
+from core.classifier import Decision, classify
 from core.claude import get_response
-from core.classifier import classify, Decision
-from core.executor import execute, ExecutionResult
+from core.executor import ExecutionResult, execute
+from core.ollama import OllamaError, run_prompt
 from core.safety import check_action, load_permissions
 
 __all__ = [

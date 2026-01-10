@@ -7,19 +7,18 @@ with retry logic and timeout handling.
 
 import subprocess
 import time
-from typing import Optional
 
 from utils.config import (
+    MAX_RETRIES,
+    OLLAMA_CHECK_TIMEOUT,
     OLLAMA_MODEL,
     OLLAMA_TIMEOUT,
-    OLLAMA_CHECK_TIMEOUT,
-    MAX_RETRIES,
     RETRY_DELAY,
 )
 from utils.errors import (
-    ServiceError,
     ErrorCode,
     ErrorContext,
+    ServiceError,
 )
 
 
@@ -48,7 +47,7 @@ def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
     Raises:
         OllamaError: After MAX_RETRIES failed attempts
     """
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
 
     for attempt in range(MAX_RETRIES):
         try:

@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generator, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from core.classifier import Decision
@@ -36,8 +36,8 @@ FILE_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 JSON_FORMAT = True  # Enable JSON structured logging
 
 # Module-level logger instances
-_logger: Optional[logging.Logger] = None
-_debug_logger: Optional[logging.Logger] = None
+_logger: logging.Logger | None = None
+_debug_logger: logging.Logger | None = None
 
 
 class JsonFormatter(logging.Formatter):
@@ -206,7 +206,7 @@ def log_action(
     action_type: str,
     decision: Decision,
     result: ExecutionResult,
-    user_input: Optional[str] = None,
+    user_input: str | None = None,
 ) -> None:
     """
     Log an automation action with full context.
@@ -375,7 +375,7 @@ def log_api_call(
     operation: str,
     success: bool,
     duration_ms: float,
-    details: Optional[dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> None:
     """
     Log an API call to an external service.
@@ -442,7 +442,7 @@ def log_claude_call(
     response_length: int,
     duration_ms: float,
     success: bool,
-    tokens_used: Optional[int] = None,
+    tokens_used: int | None = None,
 ) -> None:
     """
     Log a Claude API call.
@@ -516,7 +516,7 @@ def log_file_operation(
     operation: str,
     path: str,
     success: bool,
-    size: Optional[int] = None,
+    size: int | None = None,
 ) -> None:
     """
     Log a file operation.
@@ -552,7 +552,7 @@ def log_security_event(
     event_type: str,
     severity: str,
     description: str,
-    details: Optional[dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> None:
     """
     Log a security-related event.
@@ -590,7 +590,7 @@ def log_security_event(
 def log_permission_check(
     action_type: str,
     permission: str,
-    command: Optional[str] = None,
+    command: str | None = None,
 ) -> None:
     """
     Log a permission check result.
@@ -639,7 +639,7 @@ def log_dangerous_keyword_detected(keyword: str, context: str) -> None:
 @contextmanager
 def log_operation_timing(
     operation: str,
-    details: Optional[dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> Generator[None, None, None]:
     """
     Context manager for timing and logging operations.
@@ -682,7 +682,7 @@ def log_performance_metric(
     metric_name: str,
     value: float,
     unit: str = "ms",
-    tags: Optional[dict[str, str]] = None,
+    tags: dict[str, str] | None = None,
 ) -> None:
     """
     Log a performance metric.
@@ -713,7 +713,7 @@ def log_performance_metric(
 # =============================================================================
 
 
-def log_debug(message: str, data: Optional[dict[str, Any]] = None) -> None:
+def log_debug(message: str, data: dict[str, Any] | None = None) -> None:
     """
     Log a debug message with optional structured data.
 
@@ -730,7 +730,7 @@ def log_debug(message: str, data: Optional[dict[str, Any]] = None) -> None:
         logger.debug(message)
 
 
-def log_trace(operation: str, step: str, data: Optional[dict[str, Any]] = None) -> None:
+def log_trace(operation: str, step: str, data: dict[str, Any] | None = None) -> None:
     """
     Log a trace message for detailed debugging.
 

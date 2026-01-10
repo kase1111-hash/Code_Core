@@ -7,15 +7,12 @@ and external data to prevent security issues and ensure data integrity.
 
 import re
 from pathlib import Path
-from typing import Optional
 
 from utils.config import (
-    DANGEROUS_KEYWORDS,
     ALLOWED_EXTENSIONS,
     MAX_REPLY_LENGTH,
     SANDBOX_DIR,
 )
-
 
 # Maximum lengths for various inputs
 MAX_PROMPT_LENGTH = 10000
