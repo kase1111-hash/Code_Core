@@ -1,0 +1,328 @@
+# =============================================================================
+# Deployment Workflow for Ollama Automation Harness
+# =============================================================================
+# Handles automated deployments to various environments
+#
+# Triggers:
+#   - Manual dispatch with environment selection
+#   - Push to main branch (staging deployment)
+#   - Release tags (production deployment)
+#
+# Environments:
+#   - staging: Automatic deployment on main branch push
+#   - production: Manual approval required, triggered by release tags
+# =============================================================================
+
+name: Deploy
+
+on:
+  # Manual deployment trigger
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      target:
+        description: 'Deployment target'
+        required: true
+        type: choice
+        options:
+          - docker
+          - pypi
+          - remote
+
+  # Auto-deploy to staging on main push
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+  # Production deployment on release
+  release:
+    types: [published]
+
+# Prevent concurrent deployments to same environment
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || (github.event_name == 'release' && 'production') || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: '3.11'
+  DOCKER_IMAGE: ollama-harness
+
+jobs:
+  # ===========================================================================
+  # Pre-deployment Validation
+  # ===========================================================================
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      version: ${{ steps.get-version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Determine environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "release" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get version
+        id: get-version
+        run: |
+          VERSION=$(python -c "from utils.version import get_version; print(get_version())")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: |
+          pytest tests/ -x --tb=short -q
+
+      - name: Lint check
+        run: |
+          ruff check core utils cli.py
+
+  # ===========================================================================
+  # Docker Deployment
+  # ===========================================================================
+  deploy-docker:
+    name: Deploy Docker
+    needs: validate
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'docker') ||
+      github.event_name == 'push' ||
+      github.event_name == 'release'
+
+    environment:
+      name: ${{ needs.validate.outputs.environment }}
+      url: https://hub.docker.com/r/${{ vars.DOCKER_REGISTRY || 'ollama-harness' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: vars.DOCKER_REGISTRY
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set Docker tags
+        id: tags
+        run: |
+          VERSION=${{ needs.validate.outputs.version }}
+          ENV=${{ needs.validate.outputs.environment }}
+          REGISTRY=${{ vars.DOCKER_REGISTRY || 'ollama-harness' }}
+
+          if [ "$ENV" == "production" ]; then
+            TAGS="${REGISTRY}/${DOCKER_IMAGE}:${VERSION},${REGISTRY}/${DOCKER_IMAGE}:latest"
+          else
+            TAGS="${REGISTRY}/${DOCKER_IMAGE}:${VERSION}-${ENV},${REGISTRY}/${DOCKER_IMAGE}:${ENV}"
+          fi
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.prod
+          push: ${{ vars.DOCKER_REGISTRY != '' }}
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create deployment summary
+        run: |
+          echo "## Docker Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tags:** ${{ steps.tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # PyPI Deployment
+  # ===========================================================================
+  deploy-pypi:
+    name: Deploy to PyPI
+    needs: validate
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'pypi') ||
+      github.event_name == 'release'
+
+    environment:
+      name: ${{ needs.validate.outputs.environment }}
+      url: https://pypi.org/project/ollama-automation-harness/
+
+    permissions:
+      id-token: write  # For trusted publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build tools
+        run: |
+          pip install build twine
+
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Check package
+        run: |
+          twine check dist/*
+
+      - name: Publish to TestPyPI (staging)
+        if: needs.validate.outputs.environment == 'staging'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+      - name: Publish to PyPI (production)
+        if: needs.validate.outputs.environment == 'production'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Create deployment summary
+        run: |
+          echo "## PyPI Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package:** ollama-automation-harness" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Remote Server Deployment
+  # ===========================================================================
+  deploy-remote:
+    name: Deploy to Remote Server
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'remote'
+
+    environment:
+      name: ${{ needs.validate.outputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Build package
+        run: |
+          pip install build
+          python scripts/package.py zip
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          ZIP_FILE=$(ls dist/*.zip | head -1)
+
+          # Copy package
+          scp -i ~/.ssh/deploy_key "$ZIP_FILE" "${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/"
+
+          # Install on remote
+          ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" << 'ENDSSH'
+            set -e
+            cd /tmp
+            unzip -o *.zip -d deploy_temp
+            sudo rsync -av deploy_temp/ollama-harness/ ${DEPLOY_PATH}/
+            cd ${DEPLOY_PATH}
+            source venv/bin/activate || python3 -m venv venv && source venv/bin/activate
+            pip install -r requirements.txt
+            echo "Deployment complete"
+          ENDSSH
+
+      - name: Create deployment summary
+        run: |
+          echo "## Remote Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ needs.validate.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host:** ${{ secrets.DEPLOY_HOST }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Post-deployment Notification
+  # ===========================================================================
+  notify:
+    name: Notify
+    needs: [validate, deploy-docker, deploy-pypi, deploy-remote]
+    runs-on: ubuntu-latest
+    if: always() && (needs.deploy-docker.result == 'success' || needs.deploy-pypi.result == 'success' || needs.deploy-remote.result == 'success')
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "Deployment completed successfully!"
+          echo "Environment: ${{ needs.validate.outputs.environment }}"
+          echo "Version: ${{ needs.validate.outputs.version }}"
+
+      # Uncomment to enable Slack notifications
+      # - name: Slack notification
+      #   uses: slackapi/slack-github-action@v1
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "Ollama Harness deployed to ${{ needs.validate.outputs.environment }}",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": "*Deployment Complete*\n• Environment: ${{ needs.validate.outputs.environment }}\n• Version: ${{ needs.validate.outputs.version }}"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
