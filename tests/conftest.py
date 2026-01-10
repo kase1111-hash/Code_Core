@@ -161,6 +161,14 @@ def pytest_collection_modifyitems(config, items):
         if "test_performance" in str(item.fspath):
             item.add_marker(pytest.mark.performance)
 
+        # Add security marker to tests in test_security.py
+        if "test_security" in str(item.fspath):
+            item.add_marker(pytest.mark.security)
+
+        # Add exploit marker to tests in test_exploits.py
+        if "test_exploits" in str(item.fspath):
+            item.add_marker(pytest.mark.exploit)
+
 
 # =============================================================================
 # Helper Functions

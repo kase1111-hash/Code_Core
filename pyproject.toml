@@ -143,6 +143,8 @@ markers = [
     "regression: marks tests as regression tests (critical functionality)",
     "smoke: marks tests as smoke tests (quick sanity checks)",
     "performance: marks tests as performance tests (load, stress, benchmarks)",
+    "security: marks tests as security tests (input validation, encryption, tokens)",
+    "exploit: marks tests as exploit tests (SQLi, XSS, overflow, injection)",
 ]
 
 # Coverage configuration
