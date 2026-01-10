@@ -74,7 +74,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Build distributable packages (Dockerfile, zip, exe)
 
- Create installer or assembly file (.bat, setup wizard)
+✅ Create installer or assembly file (.bat, setup wizard)
 
  Implement semantic versioning (v1.0.0)
 
