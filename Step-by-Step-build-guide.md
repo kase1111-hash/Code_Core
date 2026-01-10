@@ -80,7 +80,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Automate deployment process
 
- Add telemetry & metrics collection
+✅ Add telemetry & metrics collection
 
  Monitor uptime, errors, and performance
 

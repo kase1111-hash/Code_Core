@@ -63,6 +63,9 @@ For more information, visit: https://github.com/example/ollama-harness
     # Version subcommand (detailed)
     _add_version_parser(subparsers)
 
+    # Metrics subcommand
+    _add_metrics_parser(subparsers)
+
     return parser
 
 
@@ -223,6 +226,27 @@ def _add_version_parser(subparsers) -> None:
         "version",
         help="Show detailed version information",
         description="Display version and system information.",
+    )
+
+
+def _add_metrics_parser(subparsers) -> None:
+    """Add the 'metrics' subcommand parser."""
+    metrics_parser = subparsers.add_parser(
+        "metrics",
+        help="Show application metrics and telemetry",
+        description="Display collected metrics and telemetry data.",
+    )
+    metrics_parser.add_argument(
+        "--format", "-f",
+        choices=["text", "json", "prometheus"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    metrics_parser.add_argument(
+        "--save",
+        type=str,
+        metavar="FILE",
+        help="Save metrics to file",
     )
 
 
@@ -527,6 +551,62 @@ def cmd_version(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_metrics(args: argparse.Namespace) -> int:
+    """
+    Execute the 'metrics' command.
+
+    Args:
+        args: Parsed arguments
+
+    Returns:
+        Exit code
+    """
+    from pathlib import Path
+
+    from utils.metrics import get_registry
+    from utils.telemetry import get_telemetry_summary
+
+    registry = get_registry()
+    output_format = getattr(args, "format", "text")
+    save_path = getattr(args, "save", None)
+
+    if output_format == "json":
+        output = registry.to_json()
+    elif output_format == "prometheus":
+        output = registry.to_prometheus()
+    else:
+        # Text format
+        summary = get_telemetry_summary()
+        lines = [
+            "Ollama Automation Harness - Metrics",
+            "=" * 50,
+            "",
+            f"Uptime: {summary['metrics']['uptime_seconds']:.1f} seconds",
+            f"Total Metrics: {summary['metrics']['total_metrics']}",
+            "",
+            "Telemetry:",
+            f"  Session ID: {summary['telemetry']['session_id']}",
+            f"  Enabled: {summary['telemetry']['enabled']}",
+            f"  Buffered Events: {summary['telemetry']['buffered_events']}",
+            "",
+            "Metrics:",
+        ]
+
+        for metric_value in registry.collect():
+            lines.append(f"  {metric_value.name}: {metric_value.value}")
+
+        output = "\n".join(lines)
+
+    # Save or print
+    if save_path:
+        Path(save_path).write_text(output)
+        print(f"Metrics saved to: {save_path}")
+    else:
+        print(output)
+
+    return 0
+
+
 def main() -> int:
     """
     Main entry point for CLI.
@@ -548,6 +628,7 @@ def main() -> int:
         "config": cmd_config,
         "check": cmd_check,
         "version": cmd_version,
+        "metrics": cmd_metrics,
     }
 
     handler = commands.get(args.command)
