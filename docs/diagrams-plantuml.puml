@@ -1,0 +1,456 @@
+@startuml system-context
+!theme plain
+title System Context Diagram - Ollama Automation Harness
+
+actor "Developer" as user
+rectangle "Ollama Automation Harness" as harness {
+  component "CLI Interface" as cli
+  component "Core Engine" as core
+  component "Safety Layer" as safety
+}
+
+cloud "Anthropic Claude API" as claude
+rectangle "Ollama (Local)" as ollama
+database "File System\n(Sandbox)" as fs
+
+user --> cli : prompts & approvals
+cli --> user : responses & requests
+core --> claude : HTTPS API calls
+core --> ollama : subprocess calls
+safety --> fs : sandboxed I/O
+
+@enduml
+
+@startuml component-architecture
+!theme plain
+title Component Architecture
+
+package "CLI Layer" {
+  [main.py] as main
+  [cli.py] as cli
+}
+
+package "Core Modules" {
+  [claude.py] as claude_mod
+  [classifier.py] as classifier
+  [executor.py] as executor
+  [ollama.py] as ollama_mod
+  [safety.py] as safety
+}
+
+package "Utils" {
+  [config.py] as config
+  [logger.py] as logger
+  [validation.py] as validation
+  [errors.py] as errors
+}
+
+package "External" {
+  cloud "Claude API" as api
+  rectangle "Ollama CLI" as ollama_cli
+  database "Sandbox" as sandbox
+  file "permissions.yaml" as perms
+}
+
+cli --> main
+main --> claude_mod
+main --> classifier
+main --> executor
+main --> safety
+main --> logger
+
+claude_mod --> api
+claude_mod --> ollama_mod
+classifier --> ollama_mod
+ollama_mod --> ollama_cli
+
+executor --> validation
+executor --> sandbox
+
+safety --> perms
+safety --> config
+
+@enduml
+
+@startuml main-sequence
+!theme plain
+title Main Workflow Sequence
+
+actor User
+participant "main.py" as Main
+participant "claude.py" as Claude
+participant "Claude API" as API
+participant "classifier.py" as Classifier
+participant "ollama.py" as Ollama
+participant "safety.py" as Safety
+participant "executor.py" as Executor
+participant "logger.py" as Logger
+
+User -> Main: Enter prompt
+activate Main
+
+Main -> Logger: log_startup()
+
+loop Automation Loop
+    Main -> Claude: get_response(prompt)
+    activate Claude
+
+    alt API Key Available
+        Claude -> API: POST /v1/messages
+        API --> Claude: response
+    else No API Key
+        Claude -> Ollama: run_prompt()
+        Ollama --> Claude: fallback response
+    end
+
+    Claude --> Main: response text
+    deactivate Claude
+
+    Main -> User: Display response
+
+    Main -> Classifier: classify(response)
+    activate Classifier
+    Classifier -> Ollama: run_prompt(classification)
+    Ollama --> Classifier: JSON
+    Classifier --> Main: Decision
+    deactivate Classifier
+
+    Main -> Safety: enforce(decision)
+    Safety --> Main: Modified Decision
+
+    alt action == "auto"
+        Main -> Executor: execute(command)
+        Executor --> Main: ExecutionResult
+        Main -> Logger: log_action()
+    else action == "user"
+        Main -> User: Request approval
+        User --> Main: approve/reject
+
+        alt Approved
+            Main -> Executor: execute(command)
+            Executor --> Main: ExecutionResult
+            Main -> Logger: log_action()
+        end
+    end
+
+    Main -> User: Show result
+    User --> Main: Continue/Exit
+end
+
+Main -> Logger: log_shutdown()
+deactivate Main
+
+@enduml
+
+@startuml classification-flow
+!theme plain
+title Classification Flow
+
+start
+
+:Receive Claude Response;
+:Sanitize Input;
+:Extract Command;
+
+if (Contains Dangerous Keywords?) then (yes)
+  :Force action=user;
+  :Set risk_level=high;
+else (no)
+  :Send to Ollama for Classification;
+
+  if (Parse JSON Success?) then (yes)
+    :Validate Fields;
+
+    if (Command has Dangerous Keywords?) then (yes)
+      :Override to action=user;
+      :Set risk_level=high;
+    else (no)
+      :Use Ollama Classification;
+    endif
+  else (no)
+    :Default to action=user;
+  endif
+endif
+
+:Return Decision Object;
+
+stop
+
+@enduml
+
+@startuml permission-flow
+!theme plain
+title Permission Enforcement Flow
+
+start
+
+:Receive Decision from Classifier;
+:Infer Action Type from Command;
+:Load permissions.yaml;
+
+if (Contains Dangerous Keywords?) then (yes)
+  :Force action=user;
+  :Set reason: dangerous keyword;
+  stop
+endif
+
+:Get Permission Level for Action Type;
+
+switch (Permission Level?)
+case (deny)
+  :Force action=user;
+  :Set reason: denied by policy;
+case (ask)
+  if (Was action=auto?) then (yes)
+    :Override to action=user;
+    :Set reason: requires approval;
+  else (no)
+    :Keep Original Decision;
+  endif
+case (auto)
+  :Keep Original Decision;
+endswitch
+
+:Return Enforced Decision;
+
+stop
+
+@enduml
+
+@startuml execution-pipeline
+!theme plain
+title Execution Pipeline
+
+start
+
+:Receive Command;
+:Validate Command (length & content);
+
+if (Valid?) then (yes)
+  :Ensure Sandbox Directory Exists;
+  :Prepare Safe Environment Variables;
+  :Execute via subprocess;
+
+  if (Timeout?) then (yes)
+    :Return Timeout Error;
+    stop
+  endif
+
+  if (Return Code = 0?) then (yes)
+    :Return Success with stdout;
+  else (no)
+    :Return Failure with stderr;
+  endif
+else (no)
+  :Return Validation Error;
+endif
+
+stop
+
+@enduml
+
+@startuml security-layers
+!theme plain
+title Security Layers (Defense in Depth)
+
+package "Layer 1: Input Validation" {
+  [Prompt Length Check] as L1A
+  [Command Length Check] as L1B
+  [String Sanitization] as L1C
+}
+
+package "Layer 2: Keyword Detection" {
+  [Dangerous Keywords Scan] as L2A
+  [Force User Action] as L2B
+}
+
+package "Layer 3: AI Classification" {
+  [Ollama Risk Assessment] as L3A
+  [Risk Level Assignment] as L3B
+}
+
+package "Layer 4: Permission Enforcement" {
+  [YAML Policy Rules] as L4A
+  [Decision Override] as L4B
+}
+
+package "Layer 5: User Approval" {
+  [Interactive Confirmation] as L5A
+  [Rejection Option] as L5B
+}
+
+package "Layer 6: Sandbox Execution" {
+  [Directory Restriction] as L6A
+  [Extension Whitelist] as L6B
+  [Timeout Enforcement] as L6C
+}
+
+package "Layer 7: Audit Logging" {
+  [Action Logging] as L7A
+  [Error Logging] as L7B
+}
+
+L1A --> L2A
+L2A --> L3A
+L3A --> L4A
+L4A --> L5A
+L5A --> L6A
+L6A --> L7A
+
+@enduml
+
+@startuml state-machine
+!theme plain
+title Application State Machine
+
+[*] --> Initializing
+
+Initializing --> Ready : Config loaded
+Initializing --> Error : Config error
+
+Ready --> WaitingForInput : Ready
+
+WaitingForInput --> ProcessingPrompt : User enters prompt
+WaitingForInput --> Shutdown : User exits
+
+ProcessingPrompt --> GettingAIResponse : Send to Claude
+
+GettingAIResponse --> ClassifyingAction : Response received
+GettingAIResponse --> Error : API error
+
+ClassifyingAction --> EnforcingPermissions : Decision made
+ClassifyingAction --> Error : Classification error
+
+EnforcingPermissions --> AutoExecuting : action=auto
+EnforcingPermissions --> WaitingForApproval : action=user
+
+WaitingForApproval --> Executing : User approves
+WaitingForApproval --> WaitingForInput : User rejects
+
+AutoExecuting --> Executing : Proceed
+
+Executing --> DisplayingResult : Complete
+Executing --> Error : Execution error
+
+DisplayingResult --> WaitingForInput : Continue
+DisplayingResult --> Shutdown : Exit
+
+Error --> WaitingForInput : Recover
+Error --> Shutdown : Fatal
+
+Shutdown --> [*]
+
+@enduml
+
+@startuml data-model
+!theme plain
+title Data Model
+
+class Decision {
+  +action: str
+  +reason: str
+  +command: str | None
+  +risk_level: str
+}
+
+class ExecutionResult {
+  +success: bool
+  +output: str
+  +error: str
+  +return_code: int
+}
+
+class PermissionConfig {
+  +actions: dict
+  +default: str
+  +dangerous_keywords: list
+  +sandbox: dict
+}
+
+class SecureConfig {
+  +environment: Environment
+  +secrets: dict
+  +validate(): list[ConfigError]
+  +to_safe_dict(): dict
+}
+
+abstract class HarnessError {
+  +message: str
+  +code: ErrorCode
+  +context: ErrorContext
+}
+
+class ServiceError extends HarnessError {
+}
+
+class ClaudeError extends ServiceError {
+}
+
+class OllamaError extends ServiceError {
+}
+
+class ValidationError extends HarnessError {
+  +field: str
+}
+
+class ConfigError {
+  +key: str
+  +message: str
+  +severity: str
+}
+
+class ErrorContext {
+  +operation: str
+  +timestamp: str
+  +extra: dict
+}
+
+HarnessError *-- ErrorContext
+SecureConfig *-- ConfigError
+PermissionConfig --> Decision : enforces
+Decision --> ExecutionResult : produces
+
+@enduml
+
+@startuml deployment
+!theme plain
+title Deployment Architecture
+
+node "Developer Machine" as dev {
+  [Python 3.10+] as python
+  [Virtual Environment] as venv
+  [Ollama (local)] as dev_ollama
+}
+
+node "Docker Container" as docker {
+  [ollama-harness:latest] as image
+  folder "Volumes" {
+    [/app/sandbox]
+    [/app/logs]
+    [/app/config]
+  }
+}
+
+node "Production Server" as prod {
+  [Docker Runtime] as runtime
+  [Ollama Service] as prod_ollama
+  [Secrets Manager] as secrets
+}
+
+cloud "External Services" {
+  [Anthropic API] as claude_api
+  [Sentry] as sentry
+}
+
+python --> venv
+venv --> dev_ollama
+image --> docker
+runtime --> image
+runtime --> prod_ollama
+runtime --> secrets
+
+venv ..> claude_api : HTTPS
+image ..> claude_api : HTTPS
+image ..> sentry : HTTPS
+
+@enduml

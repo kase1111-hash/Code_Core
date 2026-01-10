@@ -96,7 +96,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Document APIs (Swagger / Postman)
 
- Create architecture & data flow diagrams
+✅ Create architecture & data flow diagrams
 
  Finalize user documentation (README, FAQ, troubleshooting)
 
