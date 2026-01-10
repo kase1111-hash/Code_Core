@@ -90,7 +90,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Conduct manual exploratory testing
 
- Peer review / code audit
+✅ Peer review / code audit
 
  Run penetration test (internal or 3rd-party)
 
