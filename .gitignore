@@ -61,6 +61,11 @@ ENV/
 env.bak/
 venv.bak/
 
+# Environment overrides (user-specific, may contain secrets)
+# Note: config/environments/*.env are templates (no secrets) and ARE committed
+config/environments/*.local.env
+config/environments/local.env
+
 # Secrets (never commit these)
 *.pem
 *.key

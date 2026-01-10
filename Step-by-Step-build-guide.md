@@ -70,7 +70,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Set up CI/CD pipeline (GitHub Actions, Jenkins, etc.)
 
- Configure environment-specific settings (dev/stage/prod)
+✅ Configure environment-specific settings (dev/stage/prod)
 
  Build distributable packages (Dockerfile, zip, exe)
 

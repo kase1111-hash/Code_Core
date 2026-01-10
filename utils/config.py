@@ -11,8 +11,17 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+from utils.environment import (
+    Environment,
+    get_current_environment,
+    is_debug_enabled,
+    is_production,
+    load_environment,
+)
+
+# Load environment-specific configuration
+# This loads .env first, then overlays environment-specific settings
+load_environment()
 
 
 # =============================================================================
@@ -116,6 +125,34 @@ MAX_REPLY_LENGTH = int(os.getenv("MAX_REPLY_LENGTH", "2000"))
 
 
 # =============================================================================
+# Environment Configuration
+# =============================================================================
+
+# Current environment (development, staging, production, testing)
+CURRENT_ENVIRONMENT = get_current_environment()
+
+# Debug mode flag
+DEBUG = is_debug_enabled()
+
+# Log level
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+# Log format (verbose or json)
+LOG_FORMAT = os.getenv("LOG_FORMAT", "verbose")
+
+# Feature flags based on environment
+RATE_LIMITING = os.getenv("RATE_LIMITING", "true").lower() in ("true", "1", "yes")
+TEST_MODE = os.getenv("TEST_MODE", "false").lower() in ("true", "1", "yes")
+DETAILED_ERRORS = os.getenv("DETAILED_ERRORS", "false").lower() in ("true", "1", "yes")
+METRICS_ENABLED = os.getenv("METRICS_ENABLED", "false").lower() in ("true", "1", "yes")
+HEALTH_CHECK_ENABLED = os.getenv("HEALTH_CHECK_ENABLED", "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
+
+# =============================================================================
 # Helper Functions
 # =============================================================================
 
@@ -127,20 +164,37 @@ def get_config_dict() -> dict[str, Any]:
         Dictionary of all configuration values
     """
     return {
+        # Paths
         "sandbox_dir": SANDBOX_DIR,
         "permissions_file": PERMISSIONS_FILE,
         "log_file": LOG_FILE,
+        # Timeouts
         "ollama_timeout": OLLAMA_TIMEOUT,
         "command_timeout": COMMAND_TIMEOUT,
+        # Retry
         "max_retries": MAX_RETRIES,
         "retry_delay": RETRY_DELAY,
+        # Models
         "ollama_model": OLLAMA_MODEL,
         "claude_model": CLAUDE_MODEL,
         "claude_max_tokens": CLAUDE_MAX_TOKENS,
+        # Display
         "loop_delay": LOOP_DELAY,
         "max_reply_length": MAX_REPLY_LENGTH,
+        # Security
         "dangerous_keywords": DANGEROUS_KEYWORDS,
         "allowed_extensions": ALLOWED_EXTENSIONS,
+        # Environment
+        "environment": CURRENT_ENVIRONMENT.value,
+        "debug": DEBUG,
+        "log_level": LOG_LEVEL,
+        "log_format": LOG_FORMAT,
+        # Feature flags
+        "rate_limiting": RATE_LIMITING,
+        "test_mode": TEST_MODE,
+        "detailed_errors": DETAILED_ERRORS,
+        "metrics_enabled": METRICS_ENABLED,
+        "health_check_enabled": HEALTH_CHECK_ENABLED,
     }
 
 
