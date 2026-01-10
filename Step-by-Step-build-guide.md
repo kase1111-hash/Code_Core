@@ -66,7 +66,7 @@ N/A Add accessibility & localization support (CLI application)
 
 🧰 Build, Deployment & Monitoring
 
- Create automated build scripts (Makefile, .bat, shell)
+✅ Create automated build scripts (Makefile, .bat, shell)
 
  Set up CI/CD pipeline (GitHub Actions, Jenkins, etc.)
 

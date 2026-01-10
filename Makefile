@@ -72,13 +72,18 @@ typecheck: ## Run type checker (mypy)
 	mypy core utils main.py
 	@echo "$(GREEN)Type checking complete$(NC)"
 
-check: lint typecheck ## Run all code quality checks
+security: ## Run security analysis (bandit)
+	@echo "$(BLUE)Running security analysis...$(NC)"
+	bandit -r core utils cli.py -f txt || true
+	@echo "$(GREEN)Security analysis complete$(NC)"
+
+check: lint typecheck security ## Run all code quality checks
 
 # =============================================================================
 # Testing
 # =============================================================================
 
-test: ## Run tests
+test: ## Run all tests
 	@echo "$(BLUE)Running tests...$(NC)"
 	pytest tests/ -v
 	@echo "$(GREEN)Tests complete$(NC)"
@@ -87,6 +92,36 @@ test-fast: ## Run tests (fail fast)
 	@echo "$(BLUE)Running tests (fail fast)...$(NC)"
 	pytest tests/ -v -x
 	@echo "$(GREEN)Tests complete$(NC)"
+
+test-unit: ## Run unit tests only
+	@echo "$(BLUE)Running unit tests...$(NC)"
+	pytest tests/test_validation.py tests/test_config.py tests/test_errors.py tests/test_executor.py tests/test_safety.py tests/test_secrets.py tests/test_error_tracking.py tests/test_logger.py -v
+	@echo "$(GREEN)Unit tests complete$(NC)"
+
+test-integration: ## Run integration tests
+	@echo "$(BLUE)Running integration tests...$(NC)"
+	pytest tests/ -v -m "integration"
+	@echo "$(GREEN)Integration tests complete$(NC)"
+
+test-security: ## Run security tests
+	@echo "$(BLUE)Running security tests...$(NC)"
+	pytest tests/ -v -m "security or exploit or backdoor"
+	@echo "$(GREEN)Security tests complete$(NC)"
+
+test-performance: ## Run performance tests
+	@echo "$(BLUE)Running performance tests...$(NC)"
+	pytest tests/ -v -m "performance"
+	@echo "$(GREEN)Performance tests complete$(NC)"
+
+test-dynamic: ## Run dynamic/fuzzing tests
+	@echo "$(BLUE)Running dynamic analysis tests...$(NC)"
+	pytest tests/ -v -m "dynamic"
+	@echo "$(GREEN)Dynamic tests complete$(NC)"
+
+test-regression: ## Run regression tests
+	@echo "$(BLUE)Running regression tests...$(NC)"
+	pytest tests/ -v -m "regression"
+	@echo "$(GREEN)Regression tests complete$(NC)"
 
 coverage: ## Run tests with coverage report
 	@echo "$(BLUE)Running tests with coverage...$(NC)"
@@ -135,3 +170,38 @@ setup: venv ## Complete development setup
 	@echo "  1. Activate venv: source $(VENV)/bin/activate"
 	@echo "  2. Copy .env.example to .env and add your API key"
 	@echo "  3. Run: make run"
+
+# =============================================================================
+# CI/CD
+# =============================================================================
+
+ci-lint: ## Run linting for CI (with output format)
+	@echo "$(BLUE)CI: Running linter...$(NC)"
+	ruff check . --output-format=github || ruff check .
+	@echo "$(GREEN)CI: Linting complete$(NC)"
+
+ci-test: ## Run tests for CI (with JUnit output)
+	@echo "$(BLUE)CI: Running tests...$(NC)"
+	pytest tests/ -v --tb=short --junitxml=test-results.xml
+	@echo "$(GREEN)CI: Tests complete$(NC)"
+
+ci-security: ## Run security scan for CI
+	@echo "$(BLUE)CI: Running security scan...$(NC)"
+	bandit -r core utils cli.py -f json -o bandit-results.json || true
+	@echo "$(GREEN)CI: Security scan complete$(NC)"
+
+ci: ci-lint ci-test ci-security ## Run all CI checks
+	@echo "$(GREEN)All CI checks complete$(NC)"
+
+# =============================================================================
+# Build & Package
+# =============================================================================
+
+build: ## Build distribution packages
+	@echo "$(BLUE)Building distribution packages...$(NC)"
+	$(PYTHON) -m pip install --upgrade build
+	$(PYTHON) -m build
+	@echo "$(GREEN)Build complete - packages in dist/$(NC)"
+
+dist-clean: ## Clean distribution artifacts
+	rm -rf dist/ build/ *.egg-info/
