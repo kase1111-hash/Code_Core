@@ -42,6 +42,10 @@ if "%1"=="clean" goto clean
 if "%1"=="run" goto run
 if "%1"=="version" goto version
 if "%1"=="build" goto build
+if "%1"=="package-zip" goto package-zip
+if "%1"=="package-exe" goto package-exe
+if "%1"=="package-docker" goto package-docker
+if "%1"=="package-all" goto package-all
 if "%1"=="ci" goto ci
 
 echo Unknown command: %1
@@ -70,6 +74,10 @@ echo   clean         Clean build artifacts
 echo   run           Run the application
 echo   version       Show version
 echo   build         Build distribution packages
+echo   package-zip   Create zip distribution
+echo   package-exe   Create standalone executable
+echo   package-docker Build production Docker image
+echo   package-all   Create all distribution packages
 echo   ci            Run all CI checks
 echo   help          Show this help
 echo.
@@ -193,6 +201,31 @@ echo Building distribution packages...
 %PYTHON% -m pip install --upgrade build
 %PYTHON% -m build
 echo Build complete - packages in dist/
+goto end
+
+:package-zip
+echo Creating zip distribution...
+%PYTHON% scripts/package.py zip
+echo Zip package created in dist/
+goto end
+
+:package-exe
+echo Creating standalone executable...
+%PYTHON% -m pip install pyinstaller
+%PYTHON% scripts/package.py exe
+echo Executable created in dist/
+goto end
+
+:package-docker
+echo Building production Docker image...
+docker build -f Dockerfile.prod -t ollama-harness:latest .
+echo Docker image built.
+goto end
+
+:package-all
+echo Creating all distribution packages...
+%PYTHON% scripts/package.py all
+echo All packages created in dist/
 goto end
 
 :ci
