@@ -92,7 +92,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Peer review / code audit
 
- Run penetration test (internal or 3rd-party)
+✅ Run penetration test (internal or 3rd-party)
 
  Document APIs (Swagger / Postman)
 
