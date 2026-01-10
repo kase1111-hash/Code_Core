@@ -88,11 +88,11 @@ N/A Add accessibility & localization support (CLI application)
 
 🔐 Finalization & Compliance
 
- Conduct manual exploratory testing
+✅ Conduct manual exploratory testing
 
- Peer review / code audit
+✅ Peer review / code audit
 
- Run penetration test (internal or 3rd-party)
+✅ Run penetration test (internal or 3rd-party)
 
  Document APIs (Swagger / Postman)
 
