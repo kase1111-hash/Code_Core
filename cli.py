@@ -66,6 +66,9 @@ For more information, visit: https://github.com/example/ollama-harness
     # Metrics subcommand
     _add_metrics_parser(subparsers)
 
+    # Status/monitoring subcommand
+    _add_status_parser(subparsers)
+
     return parser
 
 
@@ -247,6 +250,26 @@ def _add_metrics_parser(subparsers) -> None:
         type=str,
         metavar="FILE",
         help="Save metrics to file",
+    )
+
+
+def _add_status_parser(subparsers) -> None:
+    """Add the 'status' subcommand parser."""
+    status_parser = subparsers.add_parser(
+        "status",
+        help="Show application health and monitoring status",
+        description="Display health checks, errors, and performance metrics.",
+    )
+    status_parser.add_argument(
+        "--format", "-f",
+        choices=["text", "json"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    status_parser.add_argument(
+        "--watch", "-w",
+        action="store_true",
+        help="Continuously watch status (refresh every 5s)",
     )
 
 
@@ -607,6 +630,90 @@ def cmd_metrics(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_status(args: argparse.Namespace) -> int:
+    """
+    Execute the 'status' command.
+
+    Args:
+        args: Parsed arguments
+
+    Returns:
+        Exit code
+    """
+    import json as json_module
+    import time as time_module
+
+    from utils.monitoring import get_status, HealthStatus
+
+    output_format = getattr(args, "format", "text")
+    watch_mode = getattr(args, "watch", False)
+
+    def print_status():
+        status = get_status()
+
+        if output_format == "json":
+            print(json_module.dumps(status, indent=2))
+        else:
+            # Text format
+            status_symbol = {
+                "healthy": "\033[92m●\033[0m",    # Green
+                "degraded": "\033[93m●\033[0m",   # Yellow
+                "unhealthy": "\033[91m●\033[0m",  # Red
+                "unknown": "\033[90m●\033[0m",    # Gray
+            }.get(status["status"], "●")
+
+            print(f"\nOllama Automation Harness - Status")
+            print("=" * 50)
+            print(f"Status:  {status_symbol} {status['status'].upper()}")
+            print(f"Uptime:  {status['uptime']}")
+            print(f"Time:    {status['timestamp']}")
+
+            # Health checks
+            print(f"\nHealth Checks:")
+            for name, check in status["health"]["checks"].items():
+                check_symbol = {
+                    "healthy": "✓",
+                    "degraded": "!",
+                    "unhealthy": "✗",
+                }.get(check["status"], "?")
+                print(f"  [{check_symbol}] {name}: {check['message']}")
+
+            # Performance
+            perf = status["performance"]
+            print(f"\nPerformance:")
+            print(f"  Requests:     {perf['requests']}")
+            print(f"  Throughput:   {perf['throughput_rps']} req/s")
+            print(f"  Avg Response: {perf['avg_response_ms']} ms")
+            print(f"  P95 Response: {perf['p95_response_ms']} ms")
+
+            # Errors
+            errors = status["errors"]
+            print(f"\nErrors (last {errors['window_seconds']}s):")
+            print(f"  Count:     {errors['total_errors']}")
+            print(f"  Rate:      {errors['error_rate']:.2f}/s")
+            print(f"  Threshold: {errors['threshold']}")
+
+            # Alerts
+            if status["alerts"]:
+                print(f"\nActive Alerts:")
+                for alert in status["alerts"]:
+                    print(f"  [{alert['severity']}] {alert['title']}: {alert['message']}")
+
+    if watch_mode:
+        try:
+            while True:
+                print("\033[2J\033[H")  # Clear screen
+                print_status()
+                print("\nPress Ctrl+C to exit...")
+                time_module.sleep(5)
+        except KeyboardInterrupt:
+            print("\nStopped watching.")
+    else:
+        print_status()
+
+    return 0
+
+
 def main() -> int:
     """
     Main entry point for CLI.
@@ -629,6 +736,7 @@ def main() -> int:
         "check": cmd_check,
         "version": cmd_version,
         "metrics": cmd_metrics,
+        "status": cmd_status,
     }
 
     handler = commands.get(args.command)
