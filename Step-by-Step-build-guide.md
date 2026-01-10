@@ -58,7 +58,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Perform exploit testing (SQLi, XSS, overflow)
 
- Check for backdoors & unauthorized access
+✅ Check for backdoors & unauthorized access
 
  Run static analysis (lint, type check, vuln scan)
 
