@@ -4,6 +4,10 @@
 
 The Ollama Automation Harness is a CLI application that orchestrates AI-powered development workflows with human oversight. It combines Claude's code generation capabilities with Ollama's local classification to provide safe, auditable automation.
 
+> **See Also**: For comprehensive diagrams in Mermaid and PlantUML formats, see:
+> - [diagrams.md](./diagrams.md) - Mermaid diagrams (GitHub-compatible)
+> - [diagrams-plantuml.puml](./diagrams-plantuml.puml) - PlantUML source
+
 ---
 
 ## System Architecture Diagram

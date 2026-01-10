@@ -1,0 +1,43 @@
+{
+  "id": "ollama-harness-env",
+  "name": "Ollama Harness - Development",
+  "values": [
+    {
+      "key": "anthropic_base_url",
+      "value": "https://api.anthropic.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "anthropic_api_key",
+      "value": "",
+      "type": "secret",
+      "enabled": true,
+      "description": "Your Anthropic API key (sk-ant-...)"
+    },
+    {
+      "key": "claude_model",
+      "value": "claude-sonnet-4-20250514",
+      "type": "default",
+      "enabled": true,
+      "description": "Claude model to use"
+    },
+    {
+      "key": "ollama_base_url",
+      "value": "http://localhost:11434",
+      "type": "default",
+      "enabled": true,
+      "description": "Local Ollama server URL"
+    },
+    {
+      "key": "ollama_model",
+      "value": "llama3",
+      "type": "default",
+      "enabled": true,
+      "description": "Ollama model to use"
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2024-01-15T12:00:00.000Z",
+  "_postman_exported_using": "Manual Export"
+}

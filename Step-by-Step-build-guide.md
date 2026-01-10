@@ -94,16 +94,16 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Run penetration test (internal or 3rd-party)
 
- Document APIs (Swagger / Postman)
+✅ Document APIs (Swagger / Postman)
 
- Create architecture & data flow diagrams
+✅ Create architecture & data flow diagrams
 
- Finalize user documentation (README, FAQ, troubleshooting)
+✅ Finalize user documentation (README, FAQ, troubleshooting)
 
- Add license file
+✅ Add license file
 
- Write changelog
+✅ Write changelog
 
- Perform compliance review (GDPR, HIPAA, etc.)
+✅ Perform compliance review (GDPR, HIPAA, etc.)
 
- Tag release & archive build artifacts
+✅ Tag release & archive build artifacts

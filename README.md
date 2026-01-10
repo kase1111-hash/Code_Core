@@ -98,10 +98,17 @@ Control which actions require approval:
 actions:
   read_file: auto      # Execute without asking
   write_file: ask      # Require user confirmation
+  run_tests: auto      # Tests run automatically
   git_push: ask        # Require user confirmation
   deploy: deny         # Block entirely
 
 default: ask           # Default for unknown actions
+
+dangerous_keywords:    # Always require approval
+  - deploy
+  - production
+  - sudo
+  - rm -rf
 ```
 
 ### Environment Variables
@@ -110,27 +117,115 @@ default: ask           # Default for unknown actions
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | Claude API key | (Ollama fallback) |
 | `OLLAMA_MODEL` | Ollama model name | `llama3` |
+| `CLAUDE_MODEL` | Claude model name | `claude-sonnet-4-20250514` |
 | `SANDBOX_DIR` | Sandbox directory | `./sandbox` |
 | `LOG_FILE` | Log file path | `./logs/automation.log` |
+| `OLLAMA_TIMEOUT` | Ollama timeout (seconds) | `60` |
+| `COMMAND_TIMEOUT` | Command timeout (seconds) | `30` |
+| `DEBUG` | Enable debug mode | `false` |
+
+### CLI Commands
+
+```bash
+# Start interactive mode
+python main.py
+
+# Run with initial prompt
+python main.py -p "Create a fibonacci function"
+
+# Read prompt from file
+python main.py -f prompt.txt
+
+# Use custom config
+python main.py --config custom-permissions.yaml
+
+# Enhanced CLI
+python cli.py run              # Start harness
+python cli.py config show      # Show configuration
+python cli.py config validate  # Validate configuration
+python cli.py check            # Run health checks
+python cli.py check --fix      # Fix common issues
+python cli.py version          # Show version info
+python cli.py metrics          # Show telemetry
+python cli.py status           # Show health status
+```
+
+## Quick Help
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| "Ollama not found" | Install from [ollama.ai](https://ollama.ai), run `ollama serve` |
+| "API key not set" | Add `ANTHROPIC_API_KEY=sk-ant-...` to `.env` (optional) |
+| Slow responses | Use `OLLAMA_MODEL=phi` for faster inference |
+| Permission denied | Check `config/permissions.yaml` settings |
+| Timeout errors | Increase `OLLAMA_TIMEOUT` in `.env` |
+
+### Getting Help
+
+```bash
+# Run health check
+python cli.py check --verbose
+
+# View logs
+tail -f logs/automation.log
+
+# Enable debug mode
+DEBUG=true python main.py -v
+```
+
+See [Troubleshooting Guide](docs/troubleshooting.md) for detailed solutions.
 
 ## Project Structure
 
 ```
 ollama-automation-harness/
-├── main.py              # Entry point
-├── core/                # Core modules
-│   ├── ollama.py        # Ollama CLI wrapper
-│   ├── claude.py        # Claude API client
-│   ├── classifier.py    # Action classification
-│   ├── executor.py      # Sandboxed execution
-│   └── safety.py        # Permission management
-├── utils/
-│   └── logger.py        # Audit logging
-├── config/
-│   └── permissions.yaml # Permission rules
-├── sandbox/             # Safe execution directory
-├── logs/                # Audit logs
-└── tests/               # Test suite
+├── main.py                 # Primary entry point
+├── cli.py                  # Enhanced CLI with subcommands
+├── pyproject.toml          # Project configuration
+├── requirements.txt        # Production dependencies
+├── requirements-dev.txt    # Development dependencies
+├── Makefile                # Build automation
+├── Dockerfile              # Container image
+├── .env.example            # Environment template
+│
+├── core/                   # Core business logic
+│   ├── claude.py           # Claude API client
+│   ├── ollama.py           # Ollama CLI wrapper
+│   ├── classifier.py       # Action classification
+│   ├── executor.py         # Sandboxed execution
+│   └── safety.py           # Permission management
+│
+├── utils/                  # Utility modules
+│   ├── config.py           # Configuration management
+│   ├── validation.py       # Input validation
+│   ├── logger.py           # Audit logging
+│   ├── errors.py           # Error definitions
+│   ├── secrets.py          # Secure configuration
+│   ├── telemetry.py        # Telemetry collection
+│   ├── metrics.py          # Metrics registry
+│   ├── monitoring.py       # Health monitoring
+│   └── version.py          # Version info
+│
+├── config/                 # Configuration files
+│   ├── permissions.yaml    # Permission rules
+│   └── deploy.json         # Deployment config
+│
+├── docs/                   # Documentation
+│   ├── FAQ.md              # Frequently asked questions
+│   ├── troubleshooting.md  # Troubleshooting guide
+│   ├── api-reference.md    # API documentation
+│   ├── architecture.md     # System architecture
+│   ├── diagrams.md         # Mermaid diagrams
+│   └── ...                 # Additional docs
+│
+├── sandbox/                # Safe execution directory
+├── logs/                   # Audit logs
+└── tests/                  # Test suite
+    ├── unit/               # Unit tests
+    ├── integration/        # Integration tests
+    └── acceptance/         # Acceptance tests
 ```
 
 ## Development
@@ -181,11 +276,24 @@ The harness implements multiple **AI security monitoring** layers as a **cogniti
 
 ## Documentation
 
-- [Implementation Spec](docs/implementation-spec.md) - Detailed technical specification
+### User Guides
+- [FAQ](docs/FAQ.md) - Frequently Asked Questions
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
+
+### Technical Documentation
+- [API Reference](docs/api-reference.md) - Complete API documentation
 - [Architecture](docs/architecture.md) - System design and data flow
+- [Diagrams](docs/diagrams.md) - Architecture and flow diagrams (Mermaid)
+- [Implementation Spec](docs/implementation-spec.md) - Detailed technical specification
+
+### Development Resources
 - [User Stories](docs/user-stories.md) - Requirements and acceptance criteria
 - [Tech Stack](docs/tech-stack.md) - Technology choices
 - [Style Guide](docs/style-guide.md) - Coding conventions
+
+### API Collections
+- [Postman Collection](docs/postman/ollama-harness-collection.json) - API testing collection
+- [OpenAPI Spec](docs/openapi-spec.yaml) - OpenAPI 3.1 specification
 
 ## Testing
 
