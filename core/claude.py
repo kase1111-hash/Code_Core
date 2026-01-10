@@ -6,14 +6,14 @@ with automatic fallback to Ollama when API key is not available.
 """
 
 import os
-from typing import Optional
 
-from core.ollama import run_prompt as ollama_run_prompt, OllamaError
-from utils.config import CLAUDE_MODEL, CLAUDE_MAX_TOKENS, OLLAMA_MODEL
+from core.ollama import OllamaError
+from core.ollama import run_prompt as ollama_run_prompt
+from utils.config import CLAUDE_MAX_TOKENS, CLAUDE_MODEL, OLLAMA_MODEL
 from utils.errors import (
-    ServiceError,
     ErrorCode,
     ErrorContext,
+    ServiceError,
 )
 
 
@@ -28,7 +28,7 @@ class ClaudeError(ServiceError):
         )
 
 
-def get_response(prompt: str, use_api: Optional[bool] = None) -> str:
+def get_response(prompt: str, use_api: bool | None = None) -> str:
     """
     Get a response from Claude (API or fallback).
 

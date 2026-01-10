@@ -11,17 +11,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from utils.config import (
-    SANDBOX_DIR,
     COMMAND_TIMEOUT,
+    SANDBOX_DIR,
     is_allowed_extension,
 )
 from utils.validation import (
     ValidationError,
+    contains_path_traversal,
     validate_command,
     validate_path,
-    contains_path_traversal,
 )
-from utils.errors import ErrorCode
 
 
 @dataclass

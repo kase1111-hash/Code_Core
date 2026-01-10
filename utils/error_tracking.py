@@ -10,20 +10,19 @@ Provides structured error logging compatible with:
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 import traceback
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Callable, Optional
-import logging
+from typing import Any
 
 from utils.errors import (
     HarnessError,
-    ErrorCode,
-    ErrorSeverity,
     format_error_for_log,
 )
 
@@ -34,15 +33,15 @@ ERROR_LOG_BACKUP_COUNT = 10
 
 # Module state
 _sentry_initialized = False
-_error_logger: Optional[logging.Logger] = None
+_error_logger: logging.Logger | None = None
 _error_counts: dict[str, int] = defaultdict(int)
 _error_callbacks: list[Callable[[dict[str, Any]], None]] = []
 
 
 def init_error_tracking(
-    sentry_dsn: Optional[str] = None,
+    sentry_dsn: str | None = None,
     environment: str = "development",
-    release: Optional[str] = None,
+    release: str | None = None,
 ) -> bool:
     """
     Initialize error tracking systems.
@@ -101,7 +100,7 @@ def _setup_error_logger() -> logging.Logger:
 def _init_sentry(
     dsn: str,
     environment: str,
-    release: Optional[str],
+    release: str | None,
 ) -> bool:
     """
     Initialize Sentry SDK if available.
@@ -144,10 +143,10 @@ def _init_sentry(
 
 def capture_exception(
     error: Exception,
-    context: Optional[str] = None,
-    extra: Optional[dict[str, Any]] = None,
-    user_id: Optional[str] = None,
-    tags: Optional[dict[str, str]] = None,
+    context: str | None = None,
+    extra: dict[str, Any] | None = None,
+    user_id: str | None = None,
+    tags: dict[str, str] | None = None,
 ) -> str:
     """
     Capture and log an exception.
@@ -199,9 +198,9 @@ def capture_exception(
 def capture_message(
     message: str,
     level: str = "error",
-    context: Optional[str] = None,
-    extra: Optional[dict[str, Any]] = None,
-    tags: Optional[dict[str, str]] = None,
+    context: str | None = None,
+    extra: dict[str, Any] | None = None,
+    tags: dict[str, str] | None = None,
 ) -> str:
     """
     Capture and log an error message (without exception).
@@ -244,10 +243,10 @@ def capture_message(
 def _build_error_record(
     error: Exception,
     error_id: str,
-    context: Optional[str] = None,
-    extra: Optional[dict[str, Any]] = None,
-    user_id: Optional[str] = None,
-    tags: Optional[dict[str, str]] = None,
+    context: str | None = None,
+    extra: dict[str, Any] | None = None,
+    user_id: str | None = None,
+    tags: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Build a structured error record for logging."""
 
@@ -499,17 +498,17 @@ class error_context:
     def __init__(
         self,
         context: str,
-        extra: Optional[dict[str, Any]] = None,
-        tags: Optional[dict[str, str]] = None,
+        extra: dict[str, Any] | None = None,
+        tags: dict[str, str] | None = None,
         reraise: bool = True,
     ):
         self.context = context
         self.extra = extra
         self.tags = tags
         self.reraise = reraise
-        self.error_id: Optional[str] = None
+        self.error_id: str | None = None
 
-    def __enter__(self) -> "error_context":
+    def __enter__(self) -> error_context:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
@@ -530,7 +529,7 @@ class error_context:
 
 
 def capture_errors(
-    context: Optional[str] = None,
+    context: str | None = None,
     reraise: bool = True,
 ):
     """

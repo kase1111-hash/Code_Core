@@ -16,7 +16,7 @@ import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -35,9 +35,9 @@ class SecretConfig:
     name: str
     env_var: str
     required: bool = False
-    default: Optional[str] = None
-    min_length: Optional[int] = None
-    pattern: Optional[str] = None
+    default: str | None = None
+    min_length: int | None = None
+    pattern: str | None = None
     description: str = ""
 
 
@@ -86,7 +86,7 @@ class SecureConfig:
         ),
     ])
 
-    def load(self, env_file: Optional[str] = None) -> "SecureConfig":
+    def load(self, env_file: str | None = None) -> SecureConfig:
         """
         Load secrets from environment.
 
@@ -169,7 +169,7 @@ class SecureConfig:
 
         return self._validation_errors
 
-    def get(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def get(self, name: str, default: str | None = None) -> str | None:
         """
         Get a secret value.
 
@@ -421,7 +421,7 @@ def check_environment_security() -> list[str]:
 # =============================================================================
 
 
-_config: Optional[SecureConfig] = None
+_config: SecureConfig | None = None
 
 
 def get_secure_config() -> SecureConfig:
@@ -438,7 +438,7 @@ def get_secure_config() -> SecureConfig:
     return _config
 
 
-def init_secure_config(env_file: Optional[str] = None) -> SecureConfig:
+def init_secure_config(env_file: str | None = None) -> SecureConfig:
     """
     Initialize secure configuration.
 
@@ -471,7 +471,7 @@ def init_secure_config(env_file: Optional[str] = None) -> SecureConfig:
     return _config
 
 
-def get_api_key(name: str = "anthropic_api_key") -> Optional[str]:
+def get_api_key(name: str = "anthropic_api_key") -> str | None:
     """
     Get an API key securely.
 

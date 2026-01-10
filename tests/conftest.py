@@ -169,6 +169,14 @@ def pytest_collection_modifyitems(config, items):
         if "test_exploits" in str(item.fspath):
             item.add_marker(pytest.mark.exploit)
 
+        # Add backdoor marker to tests in test_backdoors.py
+        if "test_backdoors" in str(item.fspath):
+            item.add_marker(pytest.mark.backdoor)
+
+        # Add dynamic marker to tests in test_dynamic.py
+        if "test_dynamic" in str(item.fspath):
+            item.add_marker(pytest.mark.dynamic)
+
 
 # =============================================================================
 # Helper Functions

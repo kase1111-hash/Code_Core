@@ -58,19 +58,19 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Perform exploit testing (SQLi, XSS, overflow)
 
- Check for backdoors & unauthorized access
+✅ Check for backdoors & unauthorized access
 
- Run static analysis (lint, type check, vuln scan)
+✅ Run static analysis (lint, type check, vuln scan)
 
- Run dynamic analysis (fuzzing, runtime behavior)
+✅ Run dynamic analysis (fuzzing, runtime behavior)
 
 🧰 Build, Deployment & Monitoring
 
- Create automated build scripts (Makefile, .bat, shell)
+✅ Create automated build scripts (Makefile, .bat, shell)
 
- Set up CI/CD pipeline (GitHub Actions, Jenkins, etc.)
+✅ Set up CI/CD pipeline (GitHub Actions, Jenkins, etc.)
 
- Configure environment-specific settings (dev/stage/prod)
+✅ Configure environment-specific settings (dev/stage/prod)
 
  Build distributable packages (Dockerfile, zip, exe)
 

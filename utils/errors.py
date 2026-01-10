@@ -5,9 +5,9 @@ Provides a consistent exception hierarchy, error codes, and
 recovery helpers for the Ollama Automation Harness.
 """
 
-from enum import Enum
-from typing import Any, Optional
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 
 class ErrorCode(Enum):
@@ -61,7 +61,7 @@ class ErrorContext:
     """Additional context for an error."""
 
     operation: str = ""
-    input_data: Optional[str] = None
+    input_data: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:
@@ -95,9 +95,9 @@ class HarnessError(Exception):
         message: str,
         code: ErrorCode = ErrorCode.UNKNOWN,
         severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
         recoverable: bool = True,
-        cause: Optional[Exception] = None,
+        cause: Exception | None = None,
     ):
         super().__init__(message)
         self.code = code
@@ -132,7 +132,7 @@ class ValidationError(HarnessError):
         self,
         message: str,
         code: ErrorCode = ErrorCode.VALIDATION_FAILED,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
     ):
         super().__init__(
             message,
@@ -149,7 +149,7 @@ class ConfigurationError(HarnessError):
     def __init__(
         self,
         message: str,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
     ):
         super().__init__(
             message,
@@ -167,7 +167,7 @@ class ExecutionError(HarnessError):
         self,
         message: str,
         code: ErrorCode = ErrorCode.EXECUTION_FAILED,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
         recoverable: bool = True,
     ):
         super().__init__(
@@ -186,7 +186,7 @@ class SafetyError(HarnessError):
         self,
         message: str,
         code: ErrorCode = ErrorCode.SAFETY_VIOLATION,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
     ):
         super().__init__(
             message,
@@ -204,7 +204,7 @@ class ServiceError(HarnessError):
         self,
         message: str,
         code: ErrorCode = ErrorCode.OLLAMA_ERROR,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
         recoverable: bool = True,
     ):
         super().__init__(
@@ -287,7 +287,7 @@ def is_recoverable(error: Exception) -> bool:
     return False
 
 
-def get_recovery_suggestion(error: Exception) -> Optional[str]:
+def get_recovery_suggestion(error: Exception) -> str | None:
     """
     Get a suggested recovery action for an error.
 
@@ -321,7 +321,7 @@ def get_recovery_suggestion(error: Exception) -> Optional[str]:
 def wrap_exception(
     error: Exception,
     operation: str,
-    code: Optional[ErrorCode] = None,
+    code: ErrorCode | None = None,
 ) -> HarnessError:
     """
     Wrap a standard exception in a HarnessError.

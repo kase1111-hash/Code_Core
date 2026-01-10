@@ -8,11 +8,10 @@ actionable decisions with risk assessment.
 import json
 import re
 from dataclasses import dataclass
-from typing import Optional
 
-from core.ollama import run_prompt, OllamaError
-from utils.config import is_dangerous_keyword, MAX_REPLY_LENGTH
-from utils.validation import validate_risk_level, sanitize_string
+from core.ollama import OllamaError, run_prompt
+from utils.config import MAX_REPLY_LENGTH, is_dangerous_keyword
+from utils.validation import sanitize_string, validate_risk_level
 
 CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
 
@@ -38,7 +37,7 @@ class Decision:
 
     action: str  # "auto" | "user"
     reason: str  # Explanation for the decision
-    command: Optional[str]  # Command to execute
+    command: str | None  # Command to execute
     risk_level: str  # "low" | "medium" | "high"
 
 
@@ -108,7 +107,7 @@ def classify(response: str) -> Decision:
     )
 
 
-def parse_json_response(response: str) -> Optional[dict]:
+def parse_json_response(response: str) -> dict | None:
     """
     Parse JSON from Claude/Ollama response.
 
@@ -144,7 +143,7 @@ def parse_json_response(response: str) -> Optional[dict]:
     return None
 
 
-def extract_command(response: str) -> Optional[str]:
+def extract_command(response: str) -> str | None:
     """
     Extract command from Claude response.
 
