@@ -1,14 +1,21 @@
 # Ollama Automation Harness
 
-A Python CLI that pairs Claude with Ollama for automated development workflows with human oversight on sensitive operations.
+A **human-AI collaboration** platform that pairs Claude with Ollama for **LLM-powered automation workflows** with human oversight on sensitive operations. This **AI automation harness** enables **natural language programming** for development tasks while preserving **human cognitive labor** and maintaining **proof of human work** through comprehensive audit trails.
+
+## What Problem Does This Solve?
+
+- How do I automate development tasks with AI while keeping human control?
+- How can I use LLMs for code generation safely?
+- How do I maintain audit trails for AI-assisted development?
+- How can I implement human-AI collaboration in my workflow?
 
 ## Features
 
-- **AI-Powered Automation**: Claude generates code and suggestions, Ollama classifies actions
-- **Human Oversight**: Dangerous operations always require user approval
-- **Sandboxed Execution**: All file operations restricted to a safe directory
-- **Configurable Permissions**: YAML-based rules for action classification
-- **Audit Logging**: Complete trail of all automated actions
+- **AI-Powered Automation**: Claude generates code via **natural language prompts**, Ollama provides **local LLM inference** for action classification
+- **Human Oversight**: Implements **AI trust enforcement** ensuring dangerous operations always require user approval
+- **Sandboxed Execution**: **Secure agent orchestration** with all file operations restricted to a safe directory
+- **Configurable Permissions**: YAML-based **AI security policy** rules for action classification
+- **Audit Logging**: Complete **reasoning audit trail** of all automated actions for **intent tracking**
 
 ## Quick Start
 
@@ -164,13 +171,13 @@ make docker-dev
 
 ## Security
 
-The harness implements multiple security layers:
+The harness implements multiple **AI security monitoring** layers as a **cognitive firewall** for automated operations:
 
-1. **Keyword Detection**: Commands with dangerous keywords (`deploy`, `sudo`, `rm -rf`, etc.) always require approval
-2. **Permission System**: YAML configuration controls action authorization
-3. **Sandbox Enforcement**: File operations restricted to sandbox directory
-4. **Path Validation**: No path traversal (`../`) allowed
-5. **Audit Logging**: All actions logged with full context
+1. **Keyword Detection**: Commands with dangerous keywords (`deploy`, `sudo`, `rm -rf`, etc.) always require approval - acting as **cognition boundary control**
+2. **Permission System**: YAML configuration provides **AI boundary policy** for action authorization
+3. **Sandbox Enforcement**: **Agent trust boundaries** restrict file operations to sandbox directory
+4. **Path Validation**: **Cognitive access control** prevents path traversal (`../`) attacks
+5. **Audit Logging**: **Security event management** logs all actions with full context for **AI security audit logs**
 
 ## Documentation
 
@@ -211,3 +218,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Anthropic](https://anthropic.com) for Claude
 - [Ollama](https://ollama.ai) for local LLM inference
+
+---
+
+## Part of the Connected Ecosystem
+
+This project integrates with a broader ecosystem of **digital sovereignty** and **human-AI collaboration** tools:
+
+### NatLangChain Ecosystem
+- [NatLangChain](https://github.com/kase1111-hash/NatLangChain) - Prose-first, intent-native blockchain for **natural language smart contracts**
+- [IntentLog](https://github.com/kase1111-hash/IntentLog) - **Version control for reasoning** - tracks "why" changes happen via prose commits
+- [RRA-Module](https://github.com/kase1111-hash/RRA-Module) - **Autonomous licensing agent** for abandoned repository monetization
+- [mediator-node](https://github.com/kase1111-hash/mediator-node) - **LLM mediator** for matching, negotiation, and closure proposals
+- [ILR-module](https://github.com/kase1111-hash/ILR-module) - **IP dispute resolution** and licensing reconciliation module
+- [Finite-Intent-Executor](https://github.com/kase1111-hash/Finite-Intent-Executor) - **Posthumous smart contracts** for digital estate execution
+
+### Agent-OS Ecosystem
+- [Agent-OS](https://github.com/kase1111-hash/Agent-OS) - **Natural language operating system** for AI agents (NLOS)
+- [synth-mind](https://github.com/kase1111-hash/synth-mind) - **Psychological AI architecture** with emergent continuity and empathy
+- [boundary-daemon](https://github.com/kase1111-hash/boundary-daemon-) - **AI trust enforcement** layer defining cognition boundaries
+- [memory-vault](https://github.com/kase1111-hash/memory-vault) - **Sovereign AI memory** storage for cognitive artifacts
+- [value-ledger](https://github.com/kase1111-hash/value-ledger) - **Cognitive work accounting** for ideas, effort, and novelty
+- [learning-contracts](https://github.com/kase1111-hash/learning-contracts) - **AI learning safety protocols** and data governance
+
+### Security Infrastructure
+- [Boundary-SIEM](https://github.com/kase1111-hash/Boundary-SIEM) - **AI security monitoring** and event management system
+
+### Games & Creative Projects
+- [Shredsquatch](https://github.com/kase1111-hash/Shredsquatch) - 3D first-person **snowboarding infinite runner** (SkiFree homage)
+- [Midnight-pulse](https://github.com/kase1111-hash/Midnight-pulse) - **Procedural night driving** game with synthwave aesthetics
+- [Long-Home](https://github.com/kase1111-hash/Long-Home) - Atmospheric indie narrative game built with Godot
