@@ -146,6 +146,7 @@ markers = [
     "security: marks tests as security tests (input validation, encryption, tokens)",
     "exploit: marks tests as exploit tests (SQLi, XSS, overflow, injection)",
     "backdoor: marks tests as backdoor detection tests (credentials, unauthorized access)",
+    "dynamic: marks tests as dynamic analysis tests (fuzzing, runtime behavior)",
 ]
 
 # Coverage configuration

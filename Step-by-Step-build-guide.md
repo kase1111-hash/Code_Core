@@ -62,7 +62,7 @@ N/A Add accessibility & localization support (CLI application)
 
 ✅ Run static analysis (lint, type check, vuln scan)
 
- Run dynamic analysis (fuzzing, runtime behavior)
+✅ Run dynamic analysis (fuzzing, runtime behavior)
 
 🧰 Build, Deployment & Monitoring
 
