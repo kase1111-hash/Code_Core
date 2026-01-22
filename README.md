@@ -274,6 +274,8 @@ The harness implements multiple **AI security monitoring** layers as a **cogniti
 4. **Path Validation**: **Cognitive access control** prevents path traversal (`../`) attacks
 5. **Audit Logging**: **Security event management** logs all actions with full context for **AI security audit logs**
 
+For security vulnerability reporting, see [SECURITY.md](SECURITY.md).
+
 ## Documentation
 
 ### User Guides
@@ -317,6 +319,8 @@ pytest tests/test_classifier.py -v
 5. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
+
+For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
