@@ -7,6 +7,7 @@ configuration, with support for overriding classifier decisions.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -14,6 +15,8 @@ import yaml
 
 if TYPE_CHECKING:
     from core.classifier import Decision
+
+logger = logging.getLogger(__name__)
 
 CONFIG_PATH = "config/permissions.yaml"
 
@@ -182,8 +185,10 @@ def load_permissions(path: str = CONFIG_PATH) -> dict[str, Any]:
         with open(config_file) as f:
             _permissions_cache = yaml.safe_load(f) or {}
             return _permissions_cache
-    except yaml.YAMLError:
-        # Return defaults on parse error
+    except yaml.YAMLError as e:
+        # Log the error and return defaults on parse error
+        logger.error("Failed to parse permissions YAML file '%s': %s", path, e)
+        logger.warning("Using default permissions due to YAML parse error")
         _permissions_cache = _get_default_permissions()
         return _permissions_cache
 

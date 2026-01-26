@@ -392,20 +392,29 @@ def build_continuation_prompt(previous_response: str, result: ExecutionResult) -
         )
 
 
-def get_next_prompt() -> Optional[str]:
+def get_next_prompt(max_attempts: int = 10) -> Optional[str]:
     """
     Get the next prompt from user input.
 
+    Args:
+        max_attempts: Maximum number of empty input attempts before giving up
+
     Returns:
-        User's next prompt or None on EOF
+        User's next prompt or None on EOF or max attempts reached
     """
-    try:
-        prompt = input("\nEnter next prompt (or 'q' to quit): ").strip()
-        if prompt.lower() == "q":
+    for _ in range(max_attempts):
+        try:
+            prompt = input("\nEnter next prompt (or 'q' to quit): ").strip()
+            if prompt.lower() == "q":
+                return None
+            if prompt:
+                return prompt
+            # Empty input, loop again
+        except EOFError:
             return None
-        return prompt if prompt else get_next_prompt()
-    except EOFError:
-        return None
+
+    print("Too many empty inputs. Please provide a prompt.")
+    return None
 
 
 if __name__ == "__main__":

@@ -6,12 +6,15 @@ actionable decisions with risk assessment.
 """
 
 import json
+import logging
 import re
 from dataclasses import dataclass
 
 from core.ollama import OllamaError, run_prompt
 from utils.config import MAX_REPLY_LENGTH, is_dangerous_keyword
 from utils.validation import sanitize_string, validate_risk_level
+
+logger = logging.getLogger(__name__)
 
 CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
 
@@ -94,11 +97,12 @@ def classify(response: str) -> Decision:
                 risk_level=risk_level,
             )
 
-    except OllamaError:
+    except OllamaError as e:
         # Fall back to conservative classification
-        pass
+        logger.warning("Ollama classification failed: %s. Falling back to conservative mode.", e)
 
     # Default: require user action (safe fallback)
+    logger.debug("Using conservative fallback classification for response")
     return Decision(
         action="user",
         reason="Unable to classify automatically",
@@ -120,8 +124,8 @@ def parse_json_response(response: str) -> dict | None:
     # Try direct parse first
     try:
         return json.loads(response.strip())
-    except json.JSONDecodeError:
-        pass
+    except json.JSONDecodeError as e:
+        logger.debug("Direct JSON parse failed: %s", e)
 
     # Try to find JSON in the response
     # Look for {...} pattern
@@ -129,17 +133,18 @@ def parse_json_response(response: str) -> dict | None:
     if json_match:
         try:
             return json.loads(json_match.group())
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            logger.debug("JSON extraction from pattern failed: %s", e)
 
     # Try to find JSON in code blocks
     code_block_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
     if code_block_match:
         try:
             return json.loads(code_block_match.group(1))
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            logger.debug("JSON extraction from code block failed: %s", e)
 
+    logger.warning("Failed to parse JSON from response (length=%d)", len(response))
     return None
 
 
