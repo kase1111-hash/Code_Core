@@ -104,8 +104,11 @@ def _call_api(prompt: str) -> str:
             code=ErrorCode.CLAUDE_API_ERROR,
         )
 
-    except Exception as e:
-        raise ClaudeError(f"Unexpected error calling Claude: {e}")
+    except (OSError, ValueError, TypeError) as e:
+        raise ClaudeError(
+            f"Unexpected error calling Claude: {e}",
+            code=ErrorCode.CLAUDE_ERROR,
+        )
 
 
 def _fallback_ollama(prompt: str) -> str:
@@ -124,7 +127,9 @@ def _fallback_ollama(prompt: str) -> str:
     try:
         return ollama_run_prompt(prompt, model=OLLAMA_MODEL)
     except OllamaError as e:
-        raise ClaudeError(f"Ollama fallback failed: {e}")
+        # Preserve the original error code from OllamaError
+        error_code = getattr(e, "code", ErrorCode.OLLAMA_ERROR)
+        raise ClaudeError(f"Ollama fallback failed: {e}", code=error_code)
 
 
 def check_api_available() -> bool:

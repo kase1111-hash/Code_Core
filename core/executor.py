@@ -297,7 +297,9 @@ def _get_safe_env() -> dict[str, str]:
     safe_env = {}
 
     # Only include essential environment variables
-    for key in ["PATH", "HOME", "USER", "LANG", "LC_ALL", "PYTHONPATH"]:
+    # Note: PYTHONPATH is intentionally excluded to prevent loading
+    # malicious modules in sandboxed execution
+    for key in ["PATH", "HOME", "USER", "LANG", "LC_ALL"]:
         if key in os.environ:
             safe_env[key] = os.environ[key]
 
