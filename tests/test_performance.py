@@ -14,16 +14,11 @@ Run performance tests with timing output:
 
 import concurrent.futures
 import gc
-import os
 import statistics
-import sys
-import tempfile
-import threading
 import time
 import tracemalloc
-from pathlib import Path
-from typing import Callable
-from unittest.mock import patch, MagicMock
+from collections.abc import Callable
+from unittest.mock import patch
 
 import pytest
 
@@ -143,7 +138,7 @@ class TestValidationPerformance:
 
     def test_command_validation_speed(self):
         """Test that command validation completes quickly."""
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import validate_command
 
         commands = [
             "echo hello",
@@ -238,7 +233,7 @@ class TestExecutionPerformance:
 
     def test_file_read_speed(self, sandbox):
         """Test file read performance."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         # Create files first
         content = "Test content\n" * 100
@@ -261,7 +256,7 @@ class TestExecutionPerformance:
 
     def test_concurrent_file_operations(self, sandbox):
         """Test concurrent file read/write operations."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         # Create files
         for i in range(CONCURRENT_OPERATIONS):
@@ -285,7 +280,7 @@ class TestExecutionPerformance:
 
     def test_large_file_handling(self, sandbox):
         """Test handling of larger files."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         # 100KB file
         large_content = "x" * (100 * 1024)
@@ -445,8 +440,7 @@ class TestLoadHandling:
 
     def test_concurrent_error_handling(self):
         """Test that error handling works under concurrent load."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
-        from utils.error_tracking import get_error_counts
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         def create_error(idx):
             error = HarnessError(
@@ -468,8 +462,9 @@ class TestLoadHandling:
 
     def test_logging_under_load(self, sandbox):
         """Test that logging works correctly under load."""
-        from utils.logger import get_logger, setup_logger
         import logging
+
+        from utils.logger import get_logger, setup_logger
 
         # Setup logger to temp file
         log_file = sandbox / "test.log"
@@ -514,7 +509,7 @@ class TestStressConditions:
 
     def test_error_creation_stress(self):
         """Stress test error object creation."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         start = time.perf_counter()
         for i in range(STRESS_ITERATIONS):
@@ -546,7 +541,7 @@ class TestStressConditions:
 
     def test_long_string_handling(self):
         """Test handling of very long strings."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import validate_prompt
 
         # Test with increasingly large strings
         sizes = [100, 1000, 5000, 9000]  # Stay under MAX_PROMPT_LENGTH
@@ -559,7 +554,7 @@ class TestStressConditions:
 
     def test_special_characters_stress(self):
         """Stress test with special characters."""
-        from utils.validation import validate_prompt, sanitize_string
+        from utils.validation import sanitize_string
 
         # String with many special characters
         special = "!@#$%^&*()[]{}|\\:\";<>?,./~`" * 100
@@ -597,7 +592,7 @@ class TestMemoryPerformance:
 
     def test_error_object_memory(self):
         """Test memory usage of error objects."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         def create_errors():
             errors = []
@@ -618,7 +613,7 @@ class TestMemoryPerformance:
 
     def test_file_operation_memory(self, sandbox):
         """Test memory usage during file operations."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         # Create some files
         content = "x" * 10000  # 10KB
@@ -723,7 +718,7 @@ class TestThroughputBenchmarks:
 
     def test_error_handling_throughput(self):
         """Benchmark error handling throughput."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         iterations = 5000
 

@@ -17,11 +17,8 @@ Run backdoor tests with verbose output:
 """
 
 import ast
-import os
 import re
-import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -136,7 +133,7 @@ def scan_file_for_patterns(file_path: Path, patterns: dict) -> list[dict]:
                                 "content": line.strip()[:100],
                             })
 
-    except Exception as e:
+    except Exception:
         pass  # Skip files that can't be read
 
     return findings
@@ -492,8 +489,8 @@ class TestPermissionEnforcement:
 
     def test_high_risk_commands_require_permission(self):
         """Test that high-risk commands require explicit permission."""
-        from core.safety import PermissionManager
         from core.classifier import Decision
+        from core.safety import PermissionManager
 
         manager = PermissionManager()
 
@@ -510,7 +507,7 @@ class TestPermissionEnforcement:
 
     def test_sandbox_enforced_for_file_operations(self, sandbox):
         """Test that file operations are confined to sandbox."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import write_file_sandboxed
 
         # Operations within sandbox should work
         result = write_file_sandboxed("test.txt", "content", str(sandbox))
@@ -521,7 +518,7 @@ class TestPermissionEnforcement:
 
     def test_cannot_access_parent_directories(self, sandbox):
         """Test that parent directory access is blocked."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         with pytest.raises(ValidationError):
             validate_path("../outside.txt", str(sandbox))
@@ -535,7 +532,7 @@ class TestAuthenticationBypass:
 
     def test_api_key_validation_enforced(self):
         """Test that API key validation is properly enforced."""
-        from utils.secrets import SecureConfig, SecretConfig
+        from utils.secrets import SecretConfig, SecureConfig
 
         config = SecureConfig()
         config.SECRET_DEFINITIONS = [
@@ -608,7 +605,6 @@ class TestPrivilegeEscalation:
 
     def test_sandbox_cannot_be_escaped_via_symlink(self, sandbox):
         """Test that symlinks can't escape the sandbox."""
-        from utils.validation import validate_path, ValidationError
 
         # Create symlink pointing outside sandbox
         try:
@@ -786,8 +782,8 @@ class TestDataExfiltration:
 
     def test_logs_do_not_contain_sensitive_data(self):
         """Test that logging doesn't leak sensitive data."""
-        from utils.validation import sanitize_log_message
         from utils.secrets import mask_secret
+        from utils.validation import sanitize_log_message
 
         sensitive_data = [
             "sk-ant-secret-key-12345",

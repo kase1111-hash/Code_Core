@@ -9,50 +9,49 @@ development workflows with human oversight.
 import argparse
 import sys
 import time
-from typing import Optional
 
 __version__ = "0.1.0"
 
-from core.claude import get_response, ClaudeError, get_model_info
-from core.classifier import classify, Decision
-from core.executor import execute, ExecutionResult
+from core.classifier import Decision, classify
+from core.claude import ClaudeError, get_model_info, get_response
+from core.executor import ExecutionResult, execute
 from core.safety import PermissionManager
 from utils.config import (
-    SANDBOX_DIR,
-    PERMISSIONS_FILE,
     LOOP_DELAY,
     MAX_REPLY_LENGTH,
+    PERMISSIONS_FILE,
+    SANDBOX_DIR,
     ensure_directories,
 )
-from utils.logger import (
-    setup_logger,
-    log_action,
-    log_error,
-    log_startup,
-    log_shutdown,
-    log_user_decision,
-)
-from utils.validation import (
-    ValidationError,
-    validate_prompt,
-    validate_user_choice,
-    validate_response,
-    truncate_response,
+from utils.error_tracking import (
+    capture_exception,
+    init_error_tracking,
 )
 from utils.errors import (
     HarnessError,
     format_error_for_user,
-    is_recoverable,
     get_recovery_suggestion,
+    is_recoverable,
     wrap_exception,
 )
-from utils.error_tracking import (
-    init_error_tracking,
-    capture_exception,
+from utils.logger import (
+    log_action,
+    log_error,
+    log_shutdown,
+    log_startup,
+    log_user_decision,
+    setup_logger,
 )
 from utils.secrets import (
-    init_secure_config,
     get_secure_config,
+    init_secure_config,
+)
+from utils.validation import (
+    ValidationError,
+    truncate_response,
+    validate_prompt,
+    validate_response,
+    validate_user_choice,
 )
 
 
@@ -201,7 +200,7 @@ def process_iteration(
     permissions: PermissionManager,
     sandbox_root: str,
     verbose: bool = False,
-) -> Optional[str]:
+) -> str | None:
     """
     Process a single iteration of the automation loop.
 
@@ -293,7 +292,7 @@ def handle_user_action(
     decision: Decision,
     permissions: PermissionManager,
     sandbox_root: str,
-) -> Optional[str]:
+) -> str | None:
     """
     Handle an action that requires user approval.
 
@@ -392,7 +391,7 @@ def build_continuation_prompt(previous_response: str, result: ExecutionResult) -
         )
 
 
-def get_next_prompt(max_attempts: int = 10) -> Optional[str]:
+def get_next_prompt(max_attempts: int = 10) -> str | None:
     """
     Get the next prompt from user input.
 

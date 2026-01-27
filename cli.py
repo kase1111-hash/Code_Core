@@ -8,7 +8,7 @@ Provides subcommands for running, configuration, and diagnostics.
 import argparse
 import sys
 
-from utils.version import __version__, APP_NAME
+from utils.version import __version__
 
 # Description for CLI
 __description__ = "AI-powered development automation with human oversight"
@@ -643,7 +643,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     import json as json_module
     import time as time_module
 
-    from utils.monitoring import get_status, HealthStatus
+    from utils.monitoring import get_status
 
     output_format = getattr(args, "format", "text")
     watch_mode = getattr(args, "watch", False)
@@ -662,14 +662,14 @@ def cmd_status(args: argparse.Namespace) -> int:
                 "unknown": "\033[90m●\033[0m",    # Gray
             }.get(status["status"], "●")
 
-            print(f"\nOllama Automation Harness - Status")
+            print("\nOllama Automation Harness - Status")
             print("=" * 50)
             print(f"Status:  {status_symbol} {status['status'].upper()}")
             print(f"Uptime:  {status['uptime']}")
             print(f"Time:    {status['timestamp']}")
 
             # Health checks
-            print(f"\nHealth Checks:")
+            print("\nHealth Checks:")
             for name, check in status["health"]["checks"].items():
                 check_symbol = {
                     "healthy": "✓",
@@ -680,7 +680,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
             # Performance
             perf = status["performance"]
-            print(f"\nPerformance:")
+            print("\nPerformance:")
             print(f"  Requests:     {perf['requests']}")
             print(f"  Throughput:   {perf['throughput_rps']} req/s")
             print(f"  Avg Response: {perf['avg_response_ms']} ms")
@@ -695,7 +695,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
             # Alerts
             if status["alerts"]:
-                print(f"\nActive Alerts:")
+                print("\nActive Alerts:")
                 for alert in status["alerts"]:
                     print(f"  [{alert['severity']}] {alert['title']}: {alert['message']}")
 

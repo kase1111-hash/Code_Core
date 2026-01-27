@@ -16,16 +16,10 @@ Run with verbose output:
 """
 
 import gc
-import os
 import random
 import string
-import sys
 import threading
-import time
 import tracemalloc
-from pathlib import Path
-from typing import Callable
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -125,7 +119,7 @@ class TestPromptFuzzing:
 
     def test_random_string_inputs(self):
         """Test with random string inputs."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         for _ in range(100):
             length = random.randint(1, 500)
@@ -141,7 +135,7 @@ class TestPromptFuzzing:
 
     def test_unicode_inputs(self):
         """Test with unicode string inputs."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         for _ in range(50):
             length = random.randint(1, 200)
@@ -157,7 +151,7 @@ class TestPromptFuzzing:
 
     def test_boundary_value_inputs(self):
         """Test with boundary values."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         for value in generate_boundary_values():
             try:
@@ -169,7 +163,7 @@ class TestPromptFuzzing:
 
     def test_special_character_inputs(self):
         """Test with special characters."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         for value in generate_special_characters():
             try:
@@ -182,7 +176,7 @@ class TestPromptFuzzing:
 
     def test_mixed_encoding_inputs(self):
         """Test with mixed encoding edge cases."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         mixed_inputs = [
             "Hello\xc0\xaf World",  # Overlong UTF-8
@@ -204,7 +198,7 @@ class TestCommandFuzzing:
 
     def test_random_command_inputs(self):
         """Test with random command-like inputs."""
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command
 
         commands = [
             "echo " + generate_random_string(50),
@@ -221,7 +215,7 @@ class TestCommandFuzzing:
 
     def test_command_injection_fuzzing(self):
         """Fuzz test for command injection patterns."""
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command
 
         # Generate variations of injection patterns
         separators = [";", "|", "&", "&&", "||", "\n", "\r\n"]
@@ -241,7 +235,11 @@ class TestCommandFuzzing:
 
     def test_length_boundary_commands(self):
         """Test command length boundaries."""
-        from utils.validation import validate_command, ValidationError, MAX_COMMAND_LENGTH
+        from utils.validation import (
+            MAX_COMMAND_LENGTH,
+            ValidationError,
+            validate_command,
+        )
 
         # Just under limit
         cmd = "echo " + "a" * (MAX_COMMAND_LENGTH - 6)
@@ -269,7 +267,7 @@ class TestPathFuzzing:
 
     def test_random_path_inputs(self, sandbox):
         """Test with random path inputs."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         for _ in range(100):
             # Generate random path-like strings
@@ -285,7 +283,7 @@ class TestPathFuzzing:
 
     def test_traversal_fuzzing(self, sandbox):
         """Fuzz test for path traversal patterns."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         traversal_patterns = [
             "..", "../", "..\\", "..%2f", "..%5c",
@@ -371,7 +369,7 @@ class TestRuntimeBehavior:
 
     def test_error_state_recovery(self):
         """Test that errors don't corrupt state."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         # First, a valid call
         result1 = validate_prompt("Valid input")
@@ -409,7 +407,7 @@ class TestMemoryBehavior:
 
     def test_no_memory_leak_in_error_creation(self):
         """Test that error creation doesn't leak memory."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         gc.collect()
         tracemalloc.start()
@@ -430,7 +428,7 @@ class TestMemoryBehavior:
 
     def test_large_input_memory_handling(self):
         """Test memory handling with large inputs."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         gc.collect()
         tracemalloc.start()
@@ -456,7 +454,7 @@ class TestErrorRecovery:
 
     def test_recovery_after_validation_error(self):
         """Test recovery after validation errors."""
-        from utils.validation import validate_prompt, validate_command, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         # Cause various errors
         errors_raised = 0
@@ -474,7 +472,7 @@ class TestErrorRecovery:
 
     def test_recovery_after_path_errors(self, sandbox):
         """Test recovery after path validation errors."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         # Cause path errors
         for _ in range(10):
@@ -515,7 +513,7 @@ class TestExecutorFuzzing:
 
     def test_random_file_content_fuzzing(self, sandbox):
         """Test with random file content."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         for i in range(20):
             # Random content
@@ -550,7 +548,7 @@ class TestExecutorFuzzing:
 
     def test_unicode_content_fuzzing(self, sandbox):
         """Test with unicode file content."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         unicode_contents = [
             "Hello 世界",
@@ -650,7 +648,12 @@ class TestIntegrationFuzzing:
 
     def test_full_pipeline_fuzzing(self, sandbox):
         """Fuzz test the full input pipeline."""
-        from utils.validation import validate_prompt, validate_command, validate_path, ValidationError
+        from utils.validation import (
+            ValidationError,
+            validate_command,
+            validate_path,
+            validate_prompt,
+        )
 
         for _ in range(100):
             # Random input that goes through all validation
@@ -674,7 +677,7 @@ class TestIntegrationFuzzing:
 
     def test_error_chain_fuzzing(self):
         """Fuzz test error creation and chaining."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         error_codes = list(ErrorCode)
 
@@ -703,7 +706,7 @@ class TestIntegrationFuzzing:
 
     def test_concurrent_fuzzing(self, sandbox):
         """Test concurrent fuzzing operations."""
-        from utils.validation import validate_prompt, validate_command
+        from utils.validation import validate_command, validate_prompt
 
         errors = []
         results = []
@@ -774,7 +777,7 @@ class TestPropertyBased:
 
     def test_path_validation_never_escapes_sandbox(self, sandbox):
         """Test that path validation never allows sandbox escape."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         escape_attempts = [
             "../" * i + "etc/passwd"
@@ -792,8 +795,11 @@ class TestPropertyBased:
     def test_length_limits_always_enforced(self):
         """Test that length limits are always enforced."""
         from utils.validation import (
-            validate_prompt, validate_command, ValidationError,
-            MAX_PROMPT_LENGTH, MAX_COMMAND_LENGTH
+            MAX_COMMAND_LENGTH,
+            MAX_PROMPT_LENGTH,
+            ValidationError,
+            validate_command,
+            validate_prompt,
         )
 
         # Over-limit inputs should always fail

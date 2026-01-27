@@ -6,15 +6,9 @@ testing complete workflows and verifying acceptance criteria.
 """
 
 import os
-import subprocess
-import sys
-import tempfile
-from io import StringIO
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import patch
 
 import pytest
-
 
 # =============================================================================
 # CLI Acceptance Tests
@@ -26,7 +20,7 @@ class TestCLIVersionCommand:
 
     def test_version_flag_shows_version(self):
         """Test that --version flag displays version information."""
-        from cli import create_parser, __version__
+        from cli import create_parser
 
         parser = create_parser()
 
@@ -38,8 +32,9 @@ class TestCLIVersionCommand:
 
     def test_version_subcommand_shows_details(self):
         """Test that 'version' subcommand shows detailed info."""
-        from cli import cmd_version
         import argparse
+
+        from cli import cmd_version
 
         args = argparse.Namespace()
         exit_code = cmd_version(args)
@@ -48,8 +43,9 @@ class TestCLIVersionCommand:
 
     def test_version_includes_python_info(self, capsys):
         """Test version output includes Python version."""
-        from cli import cmd_version
         import argparse
+
+        from cli import cmd_version
 
         args = argparse.Namespace()
         cmd_version(args)
@@ -63,8 +59,9 @@ class TestCLICheckCommand:
 
     def test_check_command_runs_health_checks(self, capsys):
         """Test that check command runs system health checks."""
-        from cli import cmd_check
         import argparse
+
+        from cli import cmd_check
 
         args = argparse.Namespace(fix=False, verbose=False)
         exit_code = cmd_check(args)
@@ -76,8 +73,9 @@ class TestCLICheckCommand:
 
     def test_check_command_with_fix_flag(self, capsys, tmp_path):
         """Test that --fix flag attempts to fix issues."""
-        from cli import cmd_check
         import argparse
+
+        from cli import cmd_check
 
         # Change to temp directory
         original_cwd = os.getcwd()
@@ -95,8 +93,9 @@ class TestCLICheckCommand:
 
     def test_check_verifies_python_version(self, capsys):
         """Test that check verifies Python version."""
-        from cli import cmd_check
         import argparse
+
+        from cli import cmd_check
 
         args = argparse.Namespace(fix=False, verbose=False)
         cmd_check(args)
@@ -111,8 +110,9 @@ class TestCLIConfigCommand:
 
     def test_config_show_displays_configuration(self, capsys):
         """Test that 'config show' displays current config."""
-        from cli import cmd_config
         import argparse
+
+        from cli import cmd_config
 
         args = argparse.Namespace(config_command="show")
         exit_code = cmd_config(args)
@@ -123,8 +123,9 @@ class TestCLIConfigCommand:
 
     def test_config_validate_checks_configuration(self, capsys):
         """Test that 'config validate' validates config."""
-        from cli import cmd_config
         import argparse
+
+        from cli import cmd_config
 
         args = argparse.Namespace(config_command="validate")
         exit_code = cmd_config(args)
@@ -135,8 +136,9 @@ class TestCLIConfigCommand:
 
     def test_config_path_shows_paths(self, capsys):
         """Test that 'config path' shows file paths."""
-        from cli import cmd_config
         import argparse
+
+        from cli import cmd_config
 
         args = argparse.Namespace(config_command="path")
         exit_code = cmd_config(args)
@@ -149,8 +151,9 @@ class TestCLIConfigCommand:
 
     def test_config_no_subcommand_shows_help(self, capsys):
         """Test that 'config' without subcommand shows help."""
-        from cli import cmd_config
         import argparse
+
+        from cli import cmd_config
 
         args = argparse.Namespace(config_command=None)
         exit_code = cmd_config(args)
@@ -256,7 +259,7 @@ class TestPromptProcessingWorkflow:
 
     def test_prompt_validation_rejects_empty_input(self):
         """Test that empty prompts are rejected."""
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         with pytest.raises(ValidationError):
             validate_prompt("")
@@ -365,7 +368,7 @@ class TestErrorHandlingWorkflow:
 
     def test_errors_are_user_friendly(self):
         """Test that errors produce user-friendly messages."""
-        from utils.errors import HarnessError, ErrorCode, format_error_for_user
+        from utils.errors import ErrorCode, HarnessError, format_error_for_user
 
         error = HarnessError(
             "Operation failed due to invalid input",
@@ -382,8 +385,8 @@ class TestErrorHandlingWorkflow:
     def test_recovery_suggestions_provided(self):
         """Test that recovery suggestions are provided for errors."""
         from utils.errors import (
-            HarnessError,
             ErrorCode,
+            HarnessError,
             get_recovery_suggestion,
         )
 
@@ -401,8 +404,12 @@ class TestErrorHandlingWorkflow:
 
     def test_errors_are_logged(self, tmp_path):
         """Test that errors are properly logged."""
-        from utils.error_tracking import capture_exception, reset_error_counts, get_error_counts
-        from utils.errors import HarnessError, ErrorCode
+        from utils.error_tracking import (
+            capture_exception,
+            get_error_counts,
+            reset_error_counts,
+        )
+        from utils.errors import ErrorCode, HarnessError
 
         reset_error_counts()
 
@@ -452,7 +459,7 @@ class TestSecurityAcceptance:
 
     def test_dangerous_keywords_always_detected(self):
         """Test that dangerous keywords are always detected."""
-        from utils.config import is_dangerous_keyword, DANGEROUS_KEYWORDS
+        from utils.config import is_dangerous_keyword
 
         test_commands = [
             "sudo apt-get install something",
@@ -467,7 +474,7 @@ class TestSecurityAcceptance:
 
     def test_shell_injection_prevented(self):
         """Test that shell injection attempts are prevented."""
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command
 
         injection_attempts = [
             "ls; rm -rf /",
@@ -597,10 +604,10 @@ class TestUserStoryAuditTrail:
         """Verify that errors are tracked."""
         from utils.error_tracking import (
             capture_exception,
-            reset_error_counts,
             get_error_summary,
+            reset_error_counts,
         )
-        from utils.errors import HarnessError, ErrorCode
+        from utils.errors import ErrorCode, HarnessError
 
         reset_error_counts()
 
@@ -623,7 +630,7 @@ class TestEndToEndClassificationPipeline:
 
     def test_response_classification_pipeline(self):
         """Test complete response classification pipeline."""
-        from core.classifier import classify, Decision
+        from core.classifier import Decision, classify
         from core.safety import PermissionManager
 
         # Mock response from Claude
@@ -656,7 +663,7 @@ class TestEndToEndFileWorkflow:
 
     def test_complete_file_read_write_cycle(self, tmp_path):
         """Test complete file read/write workflow."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         sandbox = tmp_path / "sandbox"
         sandbox.mkdir()
@@ -673,7 +680,7 @@ class TestEndToEndFileWorkflow:
 
     def test_nested_file_operations(self, tmp_path):
         """Test file operations in nested directories."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import write_file_sandboxed
 
         sandbox = tmp_path / "sandbox"
         sandbox.mkdir()
@@ -695,8 +702,8 @@ class TestEndToEndErrorRecovery:
     def test_graceful_error_handling(self):
         """Test that errors are handled gracefully."""
         from utils.errors import (
-            HarnessError,
             ErrorCode,
+            HarnessError,
             format_error_for_user,
             get_recovery_suggestion,
             is_recoverable,
@@ -746,10 +753,10 @@ class TestConfigurationAcceptance:
     def test_config_values_are_sensible(self):
         """Test that config values are sensible."""
         from utils.config import (
-            COMMAND_TIMEOUT,
-            MAX_REPLY_LENGTH,
-            DANGEROUS_KEYWORDS,
             ALLOWED_EXTENSIONS,
+            COMMAND_TIMEOUT,
+            DANGEROUS_KEYWORDS,
+            MAX_REPLY_LENGTH,
         )
 
         # Timeout should be reasonable

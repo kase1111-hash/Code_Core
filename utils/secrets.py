@@ -238,7 +238,7 @@ class SecureConfig:
             "environment": self.environment.value,
             "secrets": {
                 name: self.get_masked(name)
-                for name in self._secrets.keys()
+                for name in self._secrets
             },
             "loaded": self._loaded,
         }
@@ -459,14 +459,14 @@ def init_secure_config(env_file: str | None = None) -> SecureConfig:
     # Log warnings
     for error in errors:
         if error.severity == "warning":
-            warnings.warn(f"Config warning: {error.message}")
+            warnings.warn(f"Config warning: {error.message}", stacklevel=2)
         else:
-            warnings.warn(f"Config error: {error.message}")
+            warnings.warn(f"Config error: {error.message}", stacklevel=2)
 
     # Check security
     security_warnings = check_environment_security()
     for warning in security_warnings:
-        warnings.warn(f"Security: {warning}")
+        warnings.warn(f"Security: {warning}", stacklevel=2)
 
     return _config
 

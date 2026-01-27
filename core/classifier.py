@@ -16,6 +16,7 @@ from utils.validation import sanitize_string, validate_risk_level
 
 logger = logging.getLogger(__name__)
 
+# noqa: E501 - Classification prompt template
 CLASSIFICATION_PROMPT = '''Analyze this AI response and classify the required action.
 
 Response to analyze:

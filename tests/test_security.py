@@ -16,9 +16,7 @@ Run security tests with verbose output:
 """
 
 import os
-import tempfile
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -85,7 +83,7 @@ class TestInputSanitization:
 
     def test_max_length_enforcement_prompt(self):
         """Test that overly long prompts are rejected."""
-        from utils.validation import validate_prompt, ValidationError, MAX_PROMPT_LENGTH
+        from utils.validation import MAX_PROMPT_LENGTH, ValidationError, validate_prompt
 
         # Create prompt that exceeds max length
         long_prompt = "x" * (MAX_PROMPT_LENGTH + 1)
@@ -97,7 +95,11 @@ class TestInputSanitization:
 
     def test_max_length_enforcement_command(self):
         """Test that overly long commands are rejected."""
-        from utils.validation import validate_command, ValidationError, MAX_COMMAND_LENGTH
+        from utils.validation import (
+            MAX_COMMAND_LENGTH,
+            ValidationError,
+            validate_command,
+        )
 
         long_command = "echo " + "x" * (MAX_COMMAND_LENGTH + 1)
 
@@ -108,7 +110,7 @@ class TestInputSanitization:
 
     def test_empty_input_rejection(self):
         """Test that empty inputs are properly rejected."""
-        from utils.validation import validate_prompt, validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command, validate_prompt
 
         with pytest.raises(ValidationError):
             validate_prompt("")
@@ -183,7 +185,7 @@ class TestShellInjectionPrevention:
 
     def test_command_validation_rejects_injection(self):
         """Test that validate_command rejects injection attempts."""
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command
 
         injection_attempts = [
             "echo `whoami`",
@@ -316,7 +318,7 @@ class TestPathTraversalPrevention:
 
     def test_path_validation_rejects_traversal(self, sandbox):
         """Test that validate_path rejects traversal attempts."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         traversal_attempts = [
             "../etc/passwd",
@@ -330,7 +332,7 @@ class TestPathTraversalPrevention:
 
     def test_path_validation_enforces_sandbox(self, sandbox):
         """Test that paths are confined to sandbox directory."""
-        from utils.validation import validate_path, ValidationError
+        from utils.validation import ValidationError, validate_path
 
         # Try to escape sandbox with absolute path
         with pytest.raises(ValidationError):
@@ -477,7 +479,7 @@ class TestSecureConfigValidation:
 
     def test_required_secret_validation(self):
         """Test that required secrets are validated."""
-        from utils.secrets import SecureConfig, SecretConfig
+        from utils.secrets import SecretConfig, SecureConfig
 
         config = SecureConfig()
         config.SECRET_DEFINITIONS = [
@@ -494,7 +496,7 @@ class TestSecureConfigValidation:
 
     def test_min_length_validation(self):
         """Test that minimum length is enforced for secrets."""
-        from utils.secrets import SecureConfig, SecretConfig
+        from utils.secrets import SecretConfig, SecureConfig
 
         config = SecureConfig()
         config.SECRET_DEFINITIONS = [
@@ -512,7 +514,7 @@ class TestSecureConfigValidation:
 
     def test_pattern_validation(self):
         """Test that patterns are validated for secrets."""
-        from utils.secrets import SecureConfig, SecretConfig
+        from utils.secrets import SecretConfig, SecureConfig
 
         config = SecureConfig()
         config.SECRET_DEFINITIONS = [
@@ -577,7 +579,7 @@ class TestEnvironmentSecurity:
 
     def test_development_environment_detection(self):
         """Test that development environment is properly detected."""
-        from utils.secrets import SecureConfig, Environment
+        from utils.secrets import Environment, SecureConfig
 
         config = SecureConfig()
 
@@ -588,7 +590,7 @@ class TestEnvironmentSecurity:
 
     def test_production_environment_detection(self):
         """Test that production environment is properly detected."""
-        from utils.secrets import SecureConfig, Environment
+        from utils.secrets import Environment, SecureConfig
 
         config = SecureConfig()
 
@@ -608,7 +610,7 @@ class TestAPIKeySecurity:
 
     def test_api_key_not_logged_in_errors(self):
         """Test that API keys are not exposed in error messages."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         api_key = "sk-ant-super-secret-api-key-12345"
         error = HarnessError(
@@ -625,8 +627,8 @@ class TestAPIKeySecurity:
 
     def test_api_key_retrieval_requires_initialization(self):
         """Test that API keys require proper initialization."""
-        from utils.secrets import get_api_key, get_secure_config
         import utils.secrets
+        from utils.secrets import get_api_key
 
         # Reset global config
         old_config = utils.secrets._config
@@ -731,7 +733,11 @@ class TestConfigurationSecurity:
 
     def test_config_value_length_limit(self):
         """Test that config values have length limits."""
-        from utils.validation import validate_config_value, ValidationError, MAX_CONFIG_VALUE_LENGTH
+        from utils.validation import (
+            MAX_CONFIG_VALUE_LENGTH,
+            ValidationError,
+            validate_config_value,
+        )
 
         long_value = "x" * (MAX_CONFIG_VALUE_LENGTH + 1)
 
@@ -749,7 +755,7 @@ class TestConfigurationSecurity:
 
     def test_permission_level_validation(self):
         """Test that permission levels are properly validated."""
-        from utils.validation import validate_permission_level, ValidationError
+        from utils.validation import ValidationError, validate_permission_level
 
         # Valid levels
         assert validate_permission_level("auto") == "auto"
@@ -766,7 +772,7 @@ class TestConfigurationSecurity:
 
     def test_risk_level_validation(self):
         """Test that risk levels are properly validated."""
-        from utils.validation import validate_risk_level, ValidationError
+        from utils.validation import ValidationError, validate_risk_level
 
         # Valid levels
         assert validate_risk_level("low") == "low"
@@ -799,7 +805,7 @@ class TestFileSecurityOperations:
 
     def test_sandbox_read_confined(self, sandbox):
         """Test that reads are confined to sandbox."""
-        from core.executor import write_file_sandboxed, read_file_sandboxed
+        from core.executor import read_file_sandboxed, write_file_sandboxed
 
         # Create file
         write_file_sandboxed("secure.txt", "data", str(sandbox))
@@ -810,7 +816,6 @@ class TestFileSecurityOperations:
 
     def test_symlink_not_followed_outside_sandbox(self, sandbox):
         """Test that symlinks pointing outside sandbox are handled."""
-        from utils.validation import validate_path, ValidationError
 
         # Create a symlink pointing outside (if we can)
         try:
@@ -842,7 +847,7 @@ class TestResponseSecurity:
 
     def test_response_none_handling(self):
         """Test that None responses raise appropriate error."""
-        from utils.validation import validate_response, ValidationError
+        from utils.validation import ValidationError, validate_response
 
         with pytest.raises(ValidationError):
             validate_response(None)
@@ -868,7 +873,7 @@ class TestSecurityIntegration:
 
     def test_full_input_pipeline_security(self, sandbox):
         """Test that the full input processing pipeline is secure."""
-        from utils.validation import validate_prompt, validate_command, validate_path
+        from utils.validation import validate_command, validate_path, validate_prompt
 
         # Test a realistic flow
         prompt = "Run a test command"
@@ -885,7 +890,12 @@ class TestSecurityIntegration:
 
     def test_malicious_input_blocked_at_all_stages(self, sandbox):
         """Test that malicious input is blocked at appropriate stages."""
-        from utils.validation import validate_prompt, validate_command, validate_path, ValidationError
+        from utils.validation import (
+            ValidationError,
+            validate_command,
+            validate_path,
+            validate_prompt,
+        )
 
         # Stage 1: Prompt with null bytes - sanitized
         malicious_prompt = "test\x00prompt"
@@ -904,7 +914,7 @@ class TestSecurityIntegration:
 
     def test_error_messages_do_not_leak_secrets(self):
         """Test that error messages don't leak sensitive information."""
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
         from utils.secrets import mask_secret
 
         # Create error with potentially sensitive context

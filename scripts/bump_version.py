@@ -18,7 +18,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
@@ -239,7 +238,7 @@ def main():
     if args.dry_run:
         print("\nDry run - no changes made")
         print("Files that would be updated:")
-        for rel_path in VERSION_FILES.keys():
+        for rel_path in VERSION_FILES:
             file_path = PROJECT_ROOT / rel_path
             if file_path.exists():
                 print(f"  - {rel_path}")
@@ -263,9 +262,9 @@ def main():
     print(f"\nVersion bumped to {new_version}")
     print("\nNext steps:")
     print("  1. Review changes: git diff")
-    print("  2. Commit changes: git commit -am 'Bump version to {}'".format(new_version))
+    print(f"  2. Commit changes: git commit -am 'Bump version to {new_version}'")
     if not (args.tag or args.push):
-        print("  3. Create tag: git tag -a v{0} -m 'Release {0}'".format(new_version))
+        print(f"  3. Create tag: git tag -a v{new_version} -m 'Release {new_version}'")
         print("  4. Push: git push && git push --tags")
 
     return 0

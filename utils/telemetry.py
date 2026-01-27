@@ -20,20 +20,17 @@ Privacy:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import platform
 import threading
-import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from utils.metrics import get_registry, increment, record
-
 
 # =============================================================================
 # Configuration
@@ -86,7 +83,7 @@ class SessionInfo:
     environment: str
 
     @classmethod
-    def create(cls, app_version: str = "unknown") -> "SessionInfo":
+    def create(cls, app_version: str = "unknown") -> SessionInfo:
         """Create new session info."""
         return cls(
             session_id=generate_anonymous_id(),
@@ -133,10 +130,10 @@ class TelemetryClient:
     Thread-safe singleton that handles event collection and storage.
     """
 
-    _instance: Optional["TelemetryClient"] = None
+    _instance: TelemetryClient | None = None
     _lock = threading.Lock()
 
-    def __new__(cls) -> "TelemetryClient":
+    def __new__(cls) -> TelemetryClient:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -149,10 +146,10 @@ class TelemetryClient:
             return
 
         self._enabled = TELEMETRY_ENABLED
-        self._session: Optional[SessionInfo] = None
+        self._session: SessionInfo | None = None
         self._events: list[TelemetryEvent] = []
         self._event_lock = threading.Lock()
-        self._flush_timer: Optional[threading.Timer] = None
+        self._flush_timer: threading.Timer | None = None
         self._initialized = True
 
         # Initialize session
@@ -194,8 +191,8 @@ class TelemetryClient:
         self,
         name: str,
         category: str,
-        properties: Optional[dict[str, Any]] = None,
-        metrics: Optional[dict[str, float]] = None,
+        properties: dict[str, Any] | None = None,
+        metrics: dict[str, float] | None = None,
     ) -> None:
         """
         Track a telemetry event.
@@ -231,7 +228,7 @@ class TelemetryClient:
         self,
         command: str,
         success: bool,
-        duration_ms: Optional[float] = None,
+        duration_ms: float | None = None,
     ) -> None:
         """Track command execution."""
         self.track_event(
@@ -285,7 +282,7 @@ class TelemetryClient:
         self,
         error_type: str,
         error_message: str,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         """Track an error (without PII)."""
         # Sanitize error message to remove potential PII
@@ -307,7 +304,7 @@ class TelemetryClient:
         self,
         operation: str,
         duration_ms: float,
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Track performance metrics."""
         self.track_event(
@@ -331,7 +328,7 @@ class TelemetryClient:
         # Remove file paths that might contain usernames
         message = re.sub(r"/home/[^/\s]+", "/home/[user]", message)
         message = re.sub(r"/Users/[^/\s]+", "/Users/[user]", message)
-        message = re.sub(r"C:\\Users\\[^\\]+", "C:\\Users\\[user]", message)
+        message = re.sub(r"C:\\\\Users\\\\[^\\\\]+", r"C:\\Users\\[user]", message)
 
         # Remove email-like patterns
         message = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "[email]", message)
@@ -394,7 +391,7 @@ class TelemetryClient:
 # Global Functions
 # =============================================================================
 
-_client: Optional[TelemetryClient] = None
+_client: TelemetryClient | None = None
 
 
 def get_client() -> TelemetryClient:
@@ -413,14 +410,14 @@ def is_enabled() -> bool:
 def track_event(
     name: str,
     category: str,
-    properties: Optional[dict[str, Any]] = None,
-    metrics: Optional[dict[str, float]] = None,
+    properties: dict[str, Any] | None = None,
+    metrics: dict[str, float] | None = None,
 ) -> None:
     """Track a telemetry event."""
     get_client().track_event(name, category, properties, metrics)
 
 
-def track_command(command: str, success: bool, duration_ms: Optional[float] = None) -> None:
+def track_command(command: str, success: bool, duration_ms: float | None = None) -> None:
     """Track command execution."""
     get_client().track_command(command, success, duration_ms)
 
@@ -439,7 +436,7 @@ def track_llm_request(
 def track_error(
     error_type: str,
     error_message: str,
-    context: Optional[dict[str, Any]] = None,
+    context: dict[str, Any] | None = None,
 ) -> None:
     """Track an error."""
     get_client().track_error(error_type, error_message, context)
@@ -448,7 +445,7 @@ def track_error(
 def track_performance(
     operation: str,
     duration_ms: float,
-    metadata: Optional[dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> None:
     """Track performance metrics."""
     get_client().track_performance(operation, duration_ms, metadata)

@@ -25,8 +25,6 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-
 
 # =============================================================================
 # Configuration
@@ -46,19 +44,19 @@ class DeploymentConfig:
     target: str = "local"
 
     # Remote deployment
-    remote_host: Optional[str] = None
-    remote_user: Optional[str] = None
-    remote_path: Optional[str] = None
-    ssh_key: Optional[str] = None
+    remote_host: str | None = None
+    remote_user: str | None = None
+    remote_path: str | None = None
+    ssh_key: str | None = None
 
     # Docker deployment
-    docker_registry: Optional[str] = None
+    docker_registry: str | None = None
     docker_image: str = "ollama-harness"
     docker_tag: str = "latest"
 
     # PyPI deployment
     pypi_repository: str = "pypi"
-    pypi_token: Optional[str] = None
+    pypi_token: str | None = None
 
     # General options
     backup_before_deploy: bool = True
@@ -103,7 +101,7 @@ def log_step(step: int, total: int, msg: str):
 
 def run_command(
     cmd: list[str],
-    cwd: Optional[Path] = None,
+    cwd: Path | None = None,
     capture: bool = False,
     check: bool = True,
 ) -> subprocess.CompletedProcess:
@@ -183,7 +181,7 @@ def run_tests(config: DeploymentConfig) -> bool:
     return result.returncode == 0
 
 
-def create_backup(config: DeploymentConfig) -> Optional[Path]:
+def create_backup(config: DeploymentConfig) -> Path | None:
     """Create backup before deployment."""
     if not config.backup_before_deploy:
         return None
@@ -442,7 +440,7 @@ def main():
 
     if args.dry_run:
         print("Dry run mode - no changes will be made")
-        print(f"\nConfiguration:")
+        print("\nConfiguration:")
         for key, value in vars(config).items():
             if not key.startswith("_"):
                 print(f"  {key}: {value}")

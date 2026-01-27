@@ -25,8 +25,7 @@ import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 # =============================================================================
 # Configuration
@@ -89,8 +88,8 @@ class BackupMetadata:
 class RollbackState:
     """Tracks rollback state and history."""
 
-    current_backup_id: Optional[str] = None
-    previous_backup_id: Optional[str] = None
+    current_backup_id: str | None = None
+    previous_backup_id: str | None = None
     backups: list[dict] = field(default_factory=list)
     last_action: str = ""
     last_action_time: str = ""
@@ -284,7 +283,7 @@ def list_backups() -> list[BackupMetadata]:
     return backups
 
 
-def get_backup(backup_id: str) -> Optional[BackupMetadata]:
+def get_backup(backup_id: str) -> BackupMetadata | None:
     """Get metadata for a specific backup."""
     backup_path = BACKUP_DIR / backup_id / "metadata.json"
     if backup_path.exists():

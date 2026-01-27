@@ -3,25 +3,21 @@ Unit tests for utils/secrets.py
 """
 
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from utils.secrets import (
+    ConfigValidationError,
     Environment,
     SecureConfig,
-    ConfigValidationError,
+    check_environment_security,
+    get_api_key,
+    get_secure_config,
+    has_api_key,
+    init_secure_config,
+    mask_dict_secrets,
     mask_secret,
     mask_url_credentials,
-    mask_dict_secrets,
     validate_config_on_startup,
-    check_environment_security,
-    get_secure_config,
-    init_secure_config,
-    get_api_key,
-    has_api_key,
 )
 
 
