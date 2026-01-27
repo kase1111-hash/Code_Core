@@ -9,13 +9,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
-
 from utils.environment import (
-    Environment,
     get_current_environment,
     is_debug_enabled,
-    is_production,
     load_environment,
 )
 

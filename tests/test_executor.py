@@ -3,19 +3,15 @@ Unit tests for core/executor.py
 """
 
 import os
-import tempfile
-from pathlib import Path
-
-import pytest
 
 from core.executor import (
     ExecutionResult,
+    _get_safe_env,
     execute,
     execute_sandboxed,
-    write_file_sandboxed,
     read_file_sandboxed,
     validate_sandbox_path,
-    _get_safe_env,
+    write_file_sandboxed,
 )
 
 

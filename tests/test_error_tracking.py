@@ -4,26 +4,25 @@ Unit tests for utils/error_tracking.py
 
 import json
 import os
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from utils.errors import HarnessError, ErrorCode, ErrorSeverity
 from utils.error_tracking import (
-    init_error_tracking,
+    capture_errors,
     capture_exception,
     capture_message,
-    get_error_counts,
-    get_error_summary,
-    reset_error_counts,
-    register_error_callback,
-    unregister_error_callback,
     error_context,
-    capture_errors,
     format_for_elk,
     get_elk_index_template,
+    get_error_counts,
+    get_error_summary,
+    init_error_tracking,
+    register_error_callback,
+    reset_error_counts,
+    unregister_error_callback,
 )
+from utils.errors import ErrorCode, HarnessError
 
 
 class TestInitErrorTracking:
@@ -233,9 +232,8 @@ class TestErrorContext:
         """Test error_context captures exceptions."""
         reset_error_counts()
 
-        with pytest.raises(ValueError):
-            with error_context("test_operation") as ctx:
-                raise ValueError("test error")
+        with pytest.raises(ValueError), error_context("test_operation") as ctx:
+            raise ValueError("test error")
 
         assert ctx.error_id is not None
         assert ctx.error_id.startswith("err_")

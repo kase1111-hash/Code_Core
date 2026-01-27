@@ -74,11 +74,11 @@ def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
                 code=ErrorCode.OLLAMA_TIMEOUT,
             )
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             raise OllamaError(
                 "Ollama not found. Please install Ollama: https://ollama.ai",
                 code=ErrorCode.OLLAMA_NOT_FOUND,
-            )
+            ) from e
 
         except subprocess.SubprocessError as e:
             last_error = OllamaError(f"Subprocess error: {e}")
@@ -144,8 +144,8 @@ def list_models() -> list[str]:
 
         return models
 
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise OllamaError(
             "Ollama not found. Please install Ollama: https://ollama.ai",
             code=ErrorCode.OLLAMA_NOT_FOUND,
-        )
+        ) from e

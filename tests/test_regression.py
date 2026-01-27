@@ -13,8 +13,6 @@ Run all tests except regression:
 """
 
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -36,7 +34,7 @@ class TestInputValidationRegression:
         Regression: Empty strings must be rejected.
         Bug #001: Empty prompts were being accepted and causing crashes.
         """
-        from utils.validation import validate_prompt, ValidationError
+        from utils.validation import ValidationError, validate_prompt
 
         with pytest.raises(ValidationError):
             validate_prompt("")
@@ -74,7 +72,7 @@ class TestInputValidationRegression:
         Regression: Shell injection must always be blocked.
         Bug #004: Some injection patterns were not detected.
         """
-        from utils.validation import validate_command, ValidationError
+        from utils.validation import ValidationError, validate_command
 
         injection_attempts = [
             "ls; rm -rf /",
@@ -198,7 +196,7 @@ class TestExecutionRegression:
         Regression: ExecutionResult must have all required fields.
         Bug #010: Missing fields caused AttributeError.
         """
-        from core.executor import execute, ExecutionResult
+        from core.executor import ExecutionResult, execute
 
         result = execute("echo test", str(sandbox))
 
@@ -244,7 +242,7 @@ class TestErrorHandlingRegression:
         Regression: HarnessError must be serializable.
         Bug #013: to_dict() was failing with certain contexts.
         """
-        from utils.errors import HarnessError, ErrorCode, ErrorContext
+        from utils.errors import ErrorCode, ErrorContext, HarnessError
 
         error = HarnessError(
             "Test error",
@@ -492,13 +490,6 @@ class TestSmoke:
 
     def test_imports_work(self):
         """Verify all main modules can be imported."""
-        import core.classifier
-        import core.executor
-        import core.safety
-        import utils.config
-        import utils.errors
-        import utils.logger
-        import utils.validation
 
     def test_cli_parser_works(self):
         """Verify CLI parser initializes without error."""
@@ -523,9 +514,9 @@ class TestSmoke:
     def test_validation_functions_exist(self):
         """Verify validation functions exist and are callable."""
         from utils.validation import (
-            validate_prompt,
             validate_command,
             validate_path,
+            validate_prompt,
         )
 
         assert callable(validate_prompt)

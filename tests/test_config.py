@@ -2,14 +2,12 @@
 Unit tests for utils/config.py
 """
 
-import pytest
-from pathlib import Path
 from utils.config import (
-    is_dangerous_keyword,
-    is_allowed_extension,
-    get_config_dict,
-    DANGEROUS_KEYWORDS,
     ALLOWED_EXTENSIONS,
+    DANGEROUS_KEYWORDS,
+    get_config_dict,
+    is_allowed_extension,
+    is_dangerous_keyword,
 )
 
 

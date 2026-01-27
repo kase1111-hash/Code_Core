@@ -2,21 +2,20 @@
 Unit tests for utils/errors.py
 """
 
-import pytest
 from utils.errors import (
-    ErrorCode,
-    ErrorSeverity,
-    ErrorContext,
-    HarnessError,
-    ValidationError,
     ConfigurationError,
+    ErrorCode,
+    ErrorContext,
+    ErrorSeverity,
     ExecutionError,
+    HarnessError,
     SafetyError,
     ServiceError,
-    format_error_for_user,
+    ValidationError,
     format_error_for_log,
-    is_recoverable,
+    format_error_for_user,
     get_recovery_suggestion,
+    is_recoverable,
     wrap_exception,
 )
 

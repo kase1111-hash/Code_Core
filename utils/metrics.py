@@ -18,14 +18,13 @@ import os
 import statistics
 import threading
 import time
-from collections import defaultdict
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
-
+from typing import Any
 
 # =============================================================================
 # Configuration
@@ -170,7 +169,7 @@ class Histogram:
 
     def get_bucket_counts(self) -> dict[float, int]:
         """Get counts per bucket."""
-        counts = {b: 0 for b in self.buckets}
+        counts = dict.fromkeys(self.buckets, 0)
         counts[float("inf")] = 0
         for value in self._values:
             for bucket in self.buckets:
@@ -196,9 +195,9 @@ class Timer:
 
     def __init__(self, histogram: Histogram):
         self.histogram = histogram
-        self._start_time: Optional[float] = None
+        self._start_time: float | None = None
 
-    def __enter__(self) -> "Timer":
+    def __enter__(self) -> Timer:
         self._start_time = time.perf_counter()
         return self
 
@@ -226,10 +225,10 @@ class MetricsRegistry:
     Thread-safe singleton that manages metric creation and collection.
     """
 
-    _instance: Optional["MetricsRegistry"] = None
+    _instance: MetricsRegistry | None = None
     _lock = threading.Lock()
 
-    def __new__(cls) -> "MetricsRegistry":
+    def __new__(cls) -> MetricsRegistry:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -295,7 +294,7 @@ class MetricsRegistry:
         self,
         name: str,
         description: str = "",
-        buckets: Optional[tuple] = None,
+        buckets: tuple | None = None,
     ) -> Histogram:
         """Get or create a histogram metric."""
         with self._metric_lock:
@@ -387,7 +386,7 @@ class MetricsRegistry:
 
         return json.dumps(data, indent=2)
 
-    def save_to_file(self, path: Optional[Path] = None) -> Path:
+    def save_to_file(self, path: Path | None = None) -> Path:
         """Save metrics to file."""
         METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -412,7 +411,7 @@ class MetricsRegistry:
 # =============================================================================
 
 # Global registry instance
-_registry: Optional[MetricsRegistry] = None
+_registry: MetricsRegistry | None = None
 
 
 def get_registry() -> MetricsRegistry:
@@ -433,7 +432,7 @@ def gauge(name: str, description: str = "") -> Gauge:
     return get_registry().gauge(name, description)
 
 
-def histogram(name: str, description: str = "", buckets: Optional[tuple] = None) -> Histogram:
+def histogram(name: str, description: str = "", buckets: tuple | None = None) -> Histogram:
     """Get or create a histogram metric."""
     return get_registry().histogram(name, description, buckets)
 

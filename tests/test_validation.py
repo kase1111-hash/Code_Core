@@ -3,22 +3,23 @@ Unit tests for utils/validation.py
 """
 
 import pytest
+
 from utils.validation import (
     ValidationError,
-    validate_prompt,
-    sanitize_string,
-    validate_command,
+    contains_path_traversal,
     contains_shell_injection,
     get_command_risk_level,
-    validate_path,
-    contains_path_traversal,
-    validate_extension,
-    validate_permission_level,
-    validate_risk_level,
-    validate_response,
-    truncate_response,
-    validate_user_choice,
     sanitize_log_message,
+    sanitize_string,
+    truncate_response,
+    validate_command,
+    validate_extension,
+    validate_path,
+    validate_permission_level,
+    validate_prompt,
+    validate_response,
+    validate_risk_level,
+    validate_user_choice,
 )
 
 

@@ -2,17 +2,13 @@
 Unit tests for core/safety.py
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from core.safety import (
     PermissionManager,
-    load_permissions,
-    get_permission,
     _get_default_permissions,
+    get_permission,
+    load_permissions,
 )
 
 

@@ -6,36 +6,37 @@ testing the interactions between components rather than individual units.
 """
 
 import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from core.classifier import Decision, classify, extract_command, parse_json_response
-from core.executor import execute, ExecutionResult, write_file_sandboxed, read_file_sandboxed
+from core.executor import (
+    ExecutionResult,
+    execute,
+    read_file_sandboxed,
+    write_file_sandboxed,
+)
 from core.safety import PermissionManager, _get_default_permissions
-from utils.config import is_dangerous_keyword, DANGEROUS_KEYWORDS
-from utils.validation import (
-    validate_prompt,
-    validate_command,
-    validate_path,
-    ValidationError,
+from utils.config import DANGEROUS_KEYWORDS, is_dangerous_keyword
+from utils.error_tracking import (
+    capture_exception,
+    get_error_counts,
+    reset_error_counts,
 )
 from utils.errors import (
-    HarnessError,
     ErrorCode,
     ErrorContext,
-    ValidationError as ErrorsValidationError,
+    HarnessError,
     format_error_for_user,
     wrap_exception,
 )
-from utils.error_tracking import (
-    capture_exception,
-    reset_error_counts,
-    get_error_counts,
+from utils.validation import (
+    ValidationError,
+    validate_command,
+    validate_path,
+    validate_prompt,
 )
-
 
 # =============================================================================
 # Classifier + Safety Integration Tests

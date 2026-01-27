@@ -88,27 +88,31 @@ def _call_api(prompt: str) -> str:
 
         # Extract text from response
         if message.content and len(message.content) > 0:
-            return message.content[0].text
+            content_block = message.content[0]
+            # Handle TextBlock type which has a text attribute
+            if hasattr(content_block, "text"):
+                return content_block.text
+            return str(content_block)
 
         return ""
 
-    except ImportError:
+    except ImportError as e:
         raise ClaudeError(
             "anthropic package not installed. Install with: pip install anthropic",
             code=ErrorCode.CONFIGURATION,
-        )
+        ) from e
 
     except APIError as e:
         raise ClaudeError(
             f"Claude API error: {e}",
             code=ErrorCode.CLAUDE_API_ERROR,
-        )
+        ) from e
 
     except (OSError, ValueError, TypeError) as e:
         raise ClaudeError(
             f"Unexpected error calling Claude: {e}",
             code=ErrorCode.CLAUDE_ERROR,
-        )
+        ) from e
 
 
 def _fallback_ollama(prompt: str) -> str:
@@ -129,7 +133,7 @@ def _fallback_ollama(prompt: str) -> str:
     except OllamaError as e:
         # Preserve the original error code from OllamaError
         error_code = getattr(e, "code", ErrorCode.OLLAMA_ERROR)
-        raise ClaudeError(f"Ollama fallback failed: {e}", code=error_code)
+        raise ClaudeError(f"Ollama fallback failed: {e}", code=error_code) from e
 
 
 def check_api_available() -> bool:

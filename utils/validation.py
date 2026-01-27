@@ -274,7 +274,7 @@ def validate_path(
         return str(target)
 
     except (ValueError, OSError) as e:
-        raise ValidationError(f"Invalid path: {e}")
+        raise ValidationError(f"Invalid path: {e}") from e
 
 
 def contains_path_traversal(path: str) -> bool:

@@ -5,33 +5,28 @@ Unit tests for utils/logger.py
 import json
 import logging
 import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from utils.logger import (
     JsonFormatter,
-    setup_logger,
-    setup_debug_logger,
-    get_logger,
-    get_debug_logger,
-    log_error,
-    log_startup,
-    log_shutdown,
-    log_api_call,
-    log_command_execution,
-    log_file_operation,
-    log_security_event,
-    log_performance_metric,
-    log_debug,
-    log_trace,
-    log_operation_timing,
-    set_log_level,
+    _mask_sensitive_data,
     enable_verbose_logging,
     get_log_file_path,
-    _mask_sensitive_data,
+    get_logger,
+    log_api_call,
+    log_command_execution,
+    log_debug,
+    log_error,
+    log_file_operation,
+    log_operation_timing,
+    log_security_event,
+    log_shutdown,
+    log_startup,
+    log_trace,
+    set_log_level,
+    setup_debug_logger,
+    setup_logger,
 )
 
 
@@ -370,9 +365,8 @@ class TestLogOperationTiming:
         log_file = tmp_path / "test.log"
         setup_logger(str(log_file), level=logging.DEBUG, enable_console=False)
 
-        with pytest.raises(ValueError):
-            with log_operation_timing("failing_op"):
-                raise ValueError("test error")
+        with pytest.raises(ValueError), log_operation_timing("failing_op"):
+            raise ValueError("test error")
 
 
 class TestMaskSensitiveData:

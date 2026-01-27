@@ -20,13 +20,13 @@ import os
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
-from utils.metrics import counter, gauge, histogram, get_registry
-
+from utils.metrics import counter, get_registry, histogram
 
 # =============================================================================
 # Configuration
@@ -329,7 +329,7 @@ class ErrorTracker:
         self,
         error_type: str,
         message: str,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         """Record an error occurrence."""
         error = ErrorRecord(
@@ -527,10 +527,10 @@ class MonitorManager:
     Singleton that provides unified access to health, errors, and performance.
     """
 
-    _instance: Optional["MonitorManager"] = None
+    _instance: MonitorManager | None = None
     _lock = threading.Lock()
 
-    def __new__(cls) -> "MonitorManager":
+    def __new__(cls) -> MonitorManager:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -590,7 +590,7 @@ class MonitorManager:
 # Global Functions
 # =============================================================================
 
-_monitor: Optional[MonitorManager] = None
+_monitor: MonitorManager | None = None
 
 
 def get_monitor() -> MonitorManager:
@@ -611,7 +611,7 @@ def get_status() -> dict[str, Any]:
     return get_monitor().get_status()
 
 
-def record_error(error_type: str, message: str, context: Optional[dict[str, Any]] = None) -> None:
+def record_error(error_type: str, message: str, context: dict[str, Any] | None = None) -> None:
     """Record an error."""
     get_monitor().errors.record_error(error_type, message, context)
 

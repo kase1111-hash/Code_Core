@@ -17,8 +17,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from functools import total_ordering
-from typing import Optional
-
 
 # =============================================================================
 # Version Constants
@@ -31,8 +29,8 @@ __version__ = "1.0.0"
 VERSION_MAJOR = 1
 VERSION_MINOR = 0
 VERSION_PATCH = 0
-VERSION_PRERELEASE: Optional[str] = None
-VERSION_BUILD: Optional[str] = None
+VERSION_PRERELEASE: str | None = None
+VERSION_BUILD: str | None = None
 
 # Application metadata
 APP_NAME = "Ollama Automation Harness"
@@ -68,8 +66,8 @@ class SemanticVersion:
     major: int
     minor: int
     patch: int
-    prerelease: Optional[str] = None
-    build: Optional[str] = None
+    prerelease: str | None = None
+    build: str | None = None
 
     # Regex pattern for parsing semantic versions
     SEMVER_PATTERN = re.compile(
@@ -87,7 +85,7 @@ class SemanticVersion:
             raise ValueError("Version components must be non-negative integers")
 
     @classmethod
-    def parse(cls, version_string: str) -> "SemanticVersion":
+    def parse(cls, version_string: str) -> SemanticVersion:
         """
         Parse a version string into a SemanticVersion object.
 
@@ -144,7 +142,7 @@ class SemanticVersion:
             and self.prerelease == other.prerelease
         )
 
-    def __lt__(self, other: "SemanticVersion") -> bool:
+    def __lt__(self, other: SemanticVersion) -> bool:
         """
         Compare versions (build metadata is ignored per SemVer spec).
 
@@ -177,7 +175,7 @@ class SemanticVersion:
         self_parts = self.prerelease.split(".")
         other_parts = other.prerelease.split(".")
 
-        for self_part, other_part in zip(self_parts, other_parts):
+        for self_part, other_part in zip(self_parts, other_parts, strict=False):
             # Numeric identifiers have lower precedence than alphanumeric
             self_is_num = self_part.isdigit()
             other_is_num = other_part.isdigit()
@@ -199,25 +197,25 @@ class SemanticVersion:
         """Hash for use in sets/dicts."""
         return hash((self.major, self.minor, self.patch, self.prerelease))
 
-    def bump_major(self) -> "SemanticVersion":
+    def bump_major(self) -> SemanticVersion:
         """Return new version with bumped major number."""
         return SemanticVersion(self.major + 1, 0, 0)
 
-    def bump_minor(self) -> "SemanticVersion":
+    def bump_minor(self) -> SemanticVersion:
         """Return new version with bumped minor number."""
         return SemanticVersion(self.major, self.minor + 1, 0)
 
-    def bump_patch(self) -> "SemanticVersion":
+    def bump_patch(self) -> SemanticVersion:
         """Return new version with bumped patch number."""
         return SemanticVersion(self.major, self.minor, self.patch + 1)
 
-    def with_prerelease(self, prerelease: str) -> "SemanticVersion":
+    def with_prerelease(self, prerelease: str) -> SemanticVersion:
         """Return new version with pre-release identifier."""
         return SemanticVersion(
             self.major, self.minor, self.patch, prerelease=prerelease
         )
 
-    def with_build(self, build: str) -> "SemanticVersion":
+    def with_build(self, build: str) -> SemanticVersion:
         """Return new version with build metadata."""
         return SemanticVersion(
             self.major, self.minor, self.patch, self.prerelease, build=build
@@ -318,8 +316,8 @@ def format_version_string(
     major: int,
     minor: int,
     patch: int,
-    prerelease: Optional[str] = None,
-    build: Optional[str] = None,
+    prerelease: str | None = None,
+    build: str | None = None,
 ) -> str:
     """Format version components into a version string."""
     version = f"{major}.{minor}.{patch}"
