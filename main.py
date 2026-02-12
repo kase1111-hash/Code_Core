@@ -7,6 +7,8 @@ development workflows with human oversight.
 """
 
 import argparse
+import os
+import readline  # noqa: F401 — imported for input() history side-effect
 import sys
 import time
 
@@ -53,6 +55,62 @@ from utils.validation import (
     validate_response,
     validate_user_choice,
 )
+
+
+# ---------------------------------------------------------------------------
+# Terminal color helpers (no dependency required)
+# ---------------------------------------------------------------------------
+
+_USE_COLOR = sys.stdout.isatty()
+
+
+def _color(text: str, code: str) -> str:
+    """Wrap *text* in ANSI color if stdout is a terminal."""
+    if not _USE_COLOR:
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def _risk_color(risk_level: str) -> str:
+    """Return risk level string with appropriate color."""
+    colors = {"low": "32", "medium": "33", "high": "31"}  # green, yellow, red
+    return _color(risk_level, colors.get(risk_level, "0"))
+
+
+def _action_color(action: str) -> str:
+    """Return action string with appropriate color."""
+    return _color(action, "32" if action == "auto" else "33")
+
+
+INTERACTIVE_HELP = """\
+Commands:
+  help       Show this help message
+  sandbox    List files in the sandbox directory
+  q / quit   Exit the harness
+  <text>     Send a prompt to the AI
+"""
+
+
+def _show_sandbox_summary(sandbox_root: str) -> None:
+    """Print a summary of sandbox contents."""
+    from pathlib import Path
+
+    sandbox = Path(sandbox_root)
+    if not sandbox.exists():
+        print("  (sandbox directory does not exist yet)")
+        return
+    files = sorted(sandbox.rglob("*"))
+    files = [f for f in files if f.is_file()]
+    if not files:
+        print("  (empty)")
+        return
+    total_size = 0
+    for f in files:
+        size = f.stat().st_size
+        total_size += size
+        rel = f.relative_to(sandbox)
+        print(f"  {rel}  ({size:,} bytes)")
+    print(f"  --- {len(files)} file(s), {total_size:,} bytes total")
 
 
 def main() -> None:
@@ -219,7 +277,7 @@ def process_iteration(
             prompt = validate_prompt(prompt)
         except ValidationError as e:
             print(f"\n[Error]: Invalid prompt - {e}")
-            return get_next_prompt()
+            return get_next_prompt(sandbox_root=sandbox_root)
 
         # Get Claude's response
         print(f"\n[Prompt]: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
@@ -233,8 +291,8 @@ def process_iteration(
         decision = classify(claude_reply)
         decision = permissions.enforce(decision)
 
-        print(f"\n[Decision]: {decision.action} ({decision.reason})")
-        print(f"[Risk]: {decision.risk_level}")
+        print(f"\n[Decision]: {_action_color(decision.action)} ({decision.reason})")
+        print(f"[Risk]: {_risk_color(decision.risk_level)}")
         if decision.command:
             print(f"[Command]: {decision.command[:100]}")
 
@@ -255,7 +313,7 @@ def process_iteration(
                 return build_continuation_prompt(claude_reply, result)
             else:
                 print("\n[Info]: No command to execute")
-                return get_next_prompt()
+                return get_next_prompt(sandbox_root=sandbox_root)
 
         else:  # "user" action required
             return handle_user_action(decision, permissions, sandbox_root)
@@ -267,7 +325,7 @@ def process_iteration(
         suggestion = get_recovery_suggestion(wrap_exception(e, "get_response"))
         if suggestion:
             print(f"[Suggestion]: {suggestion}")
-        return get_next_prompt()
+        return get_next_prompt(sandbox_root=sandbox_root)
 
     except HarnessError as e:
         log_error(e, "process_iteration")
@@ -277,7 +335,7 @@ def process_iteration(
             suggestion = get_recovery_suggestion(e)
             if suggestion:
                 print(f"[Suggestion]: {suggestion}")
-            return get_next_prompt()
+            return get_next_prompt(sandbox_root=sandbox_root)
         return None
 
     except Exception as e:
@@ -285,7 +343,7 @@ def process_iteration(
         log_error(wrapped, "process_iteration")
         capture_exception(e, context="process_iteration")
         print(f"\n[Error]: {format_error_for_user(wrapped)}")
-        return get_next_prompt()
+        return get_next_prompt(sandbox_root=sandbox_root)
 
 
 def handle_user_action(
@@ -339,7 +397,7 @@ def handle_user_action(
             return build_continuation_prompt("User approved execution", result)
         else:
             print("\n[Info]: No command to execute")
-            return get_next_prompt()
+            return get_next_prompt(sandbox_root=sandbox_root)
 
     elif user_input == "m":
         # Modify the prompt
@@ -349,10 +407,10 @@ def handle_user_action(
                 return modification
         except EOFError:
             pass
-        return get_next_prompt()
+        return get_next_prompt(sandbox_root=sandbox_root)
 
     else:  # skip or anything else
-        return get_next_prompt()
+        return get_next_prompt(sandbox_root=sandbox_root)
 
 
 def display_response(response: str) -> None:
@@ -391,21 +449,31 @@ def build_continuation_prompt(previous_response: str, result: ExecutionResult) -
         )
 
 
-def get_next_prompt(max_attempts: int = 10) -> str | None:
+def get_next_prompt(max_attempts: int = 10, sandbox_root: str = SANDBOX_DIR) -> str | None:
     """
     Get the next prompt from user input.
 
+    Supports interactive commands: help, sandbox, q/quit.
+
     Args:
         max_attempts: Maximum number of empty input attempts before giving up
+        sandbox_root: Path to sandbox directory (for 'sandbox' command)
 
     Returns:
         User's next prompt or None on EOF or max attempts reached
     """
     for _ in range(max_attempts):
         try:
-            prompt = input("\nEnter next prompt (or 'q' to quit): ").strip()
-            if prompt.lower() == "q":
+            prompt = input("\nEnter next prompt (or 'help'): ").strip()
+            lower = prompt.lower()
+            if lower in ("q", "quit"):
                 return None
+            if lower == "help":
+                print(INTERACTIVE_HELP)
+                continue
+            if lower == "sandbox":
+                _show_sandbox_summary(sandbox_root)
+                continue
             if prompt:
                 return prompt
             # Empty input, loop again

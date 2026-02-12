@@ -187,6 +187,42 @@ class TestPermissionManagerInferActionType:
         decision = MockDecision(command="some random command")
         assert manager._infer_action_type(decision) == "default"
 
+    def test_infer_install_package(self, tmp_path):
+        """Test inferring install_package action type."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="pip install requests")
+        assert manager._infer_action_type(decision) == "install_package"
+
+    def test_infer_system_command(self, tmp_path):
+        """Test inferring system_command for docker."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="docker run nginx")
+        assert manager._infer_action_type(decision) == "system_command"
+
+    def test_infer_remote_command(self, tmp_path):
+        """Test inferring remote_command for ssh."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="ssh user@host")
+        assert manager._infer_action_type(decision) == "remote_command"
+
+    def test_infer_lint_code(self, tmp_path):
+        """Test inferring lint_code for linters."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="ruff check .")
+        assert manager._infer_action_type(decision) == "lint_code"
+
+    def test_infer_format_code(self, tmp_path):
+        """Test inferring format_code for formatters."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="ruff format .")
+        assert manager._infer_action_type(decision) == "format_code"
+
+    def test_infer_git_add(self, tmp_path):
+        """Test inferring git_add action type."""
+        manager = PermissionManager(str(tmp_path / "nonexistent.yaml"))
+        decision = MockDecision(command="git add file.py")
+        assert manager._infer_action_type(decision) == "git_add"
+
 
 class TestLoadPermissions:
     """Tests for load_permissions function."""

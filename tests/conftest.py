@@ -115,6 +115,15 @@ sandbox:
 
 
 @pytest.fixture(autouse=True)
+def reset_permissions_cache():
+    """Reset permissions cache between tests to prevent state leakage."""
+    import core.safety
+    core.safety._permissions_cache = None
+    yield
+    core.safety._permissions_cache = None
+
+
+@pytest.fixture(autouse=True)
 def reset_loggers():
     """Reset loggers between tests to prevent state leakage."""
     yield

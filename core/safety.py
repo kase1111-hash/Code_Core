@@ -8,6 +8,7 @@ configuration, with support for overriding classifier decisions.
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -128,41 +129,87 @@ class PermissionManager:
             return False
 
     def _contains_dangerous_keyword(self, command: str) -> bool:
-        """Check if command contains dangerous keywords."""
+        """Check if command contains dangerous keywords.
+
+        Keywords that start and end with / are treated as regex patterns
+        (e.g. "/rm\\s+-r/" matches rm -r, rm -rf, rm -ri). Plain strings
+        are matched as literal substrings.
+        """
         dangerous = self.permissions.get("dangerous_keywords", [
             "deploy", "production", "push", "sudo", "rm -rf",
             "chmod", "chown", "curl", "wget", "eval", "exec",
         ])
         command_lower = command.lower()
-        return any(keyword.lower() in command_lower for keyword in dangerous)
+        for keyword in dangerous:
+            kw = str(keyword)
+            if kw.startswith("/") and kw.endswith("/") and len(kw) > 2:
+                # Regex pattern
+                try:
+                    if re.search(kw[1:-1], command_lower):
+                        return True
+                except re.error:
+                    # Fall back to literal match on bad regex
+                    if kw[1:-1] in command_lower:
+                        return True
+            else:
+                if kw.lower() in command_lower:
+                    return True
+        return False
+
+    # Regex-based action type inference rules.
+    # Order matters: first match wins. Each entry is (pattern, action_type).
+    _ACTION_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+        # Git operations (most specific first)
+        (re.compile(r"\bgit\s+push\b"), "git_push"),
+        (re.compile(r"\bgit\s+pull\b"), "git_pull"),
+        (re.compile(r"\bgit\s+commit\b"), "git_commit"),
+        (re.compile(r"\bgit\s+add\b"), "git_add"),
+        (re.compile(r"\bgit\s+(status|diff|log|show)\b"), "git_status"),
+        # Package installation
+        (re.compile(r"\b(pip|pip3)\s+install\b"), "install_package"),
+        (re.compile(r"\bnpm\s+(install|i|ci)\b"), "install_package"),
+        (re.compile(r"\b(apt-get|apt|yum|dnf|brew|pacman)\s+(install|update|upgrade)\b"), "install_package"),
+        # Remote / container commands
+        (re.compile(r"\b(ssh|scp|rsync)\b"), "remote_command"),
+        (re.compile(r"\b(docker|kubectl|podman)\b"), "system_command"),
+        # Deploy
+        (re.compile(r"\bdeploy\b"), "deploy"),
+        # Linting and formatting
+        (re.compile(r"\b(ruff|flake8|pylint|eslint|black|isort|prettier)\s+(check|--check)\b"), "lint_code"),
+        (re.compile(r"\b(ruff|black|isort|prettier|autopep8)\s+(format|--fix)\b"), "format_code"),
+        (re.compile(r"\b(ruff|flake8|pylint|eslint|mypy)\b"), "lint_code"),
+        # Testing
+        (re.compile(r"\b(pytest|unittest|nose2|tox)\b"), "run_tests"),
+        (re.compile(r"\btest\b"), "run_tests"),
+        # File operations
+        (re.compile(r"\brm\s"), "delete_file"),
+        (re.compile(r"\bdelete\b"), "delete_file"),
+        (re.compile(r"\b(cat|less|head|tail|more)\s"), "read_file"),
+        (re.compile(r"\bread\b"), "read_file"),
+        (re.compile(r"\b(echo|tee)\s.*>"), "write_file"),
+        (re.compile(r"\btouch\s"), "write_file"),
+        (re.compile(r"\bwrite\b"), "write_file"),
+    ]
 
     def _infer_action_type(self, decision: Decision) -> str:
-        """Infer action type from decision command."""
+        """Infer action type from decision command using regex patterns."""
         command = (decision.command or "").lower()
-
-        if "git push" in command:
-            return "git_push"
-        elif "git commit" in command:
-            return "git_commit"
-        elif "git pull" in command:
-            return "git_pull"
-        elif "deploy" in command:
-            return "deploy"
-        elif "rm " in command or "delete" in command:
-            return "delete_file"
-        elif any(cmd in command for cmd in ["cat ", "read", "less ", "head ", "tail "]):
-            return "read_file"
-        elif any(cmd in command for cmd in ["write", "echo ", ">", "touch "]):
-            return "write_file"
-        elif "test" in command or "pytest" in command:
-            return "run_tests"
-
+        for pattern, action_type in self._ACTION_PATTERNS:
+            if pattern.search(command):
+                return action_type
         return "default"
+
+
+PROJECT_CONFIG = ".ollama-harness.yaml"
 
 
 def load_permissions(path: str = CONFIG_PATH) -> dict[str, Any]:
     """
     Load permissions from YAML configuration file.
+
+    If a project-scoped `.ollama-harness.yaml` exists in the current
+    directory, its values are merged on top of the global config
+    (project overrides global).
 
     Args:
         path: Path to permissions YAML file
@@ -178,20 +225,40 @@ def load_permissions(path: str = CONFIG_PATH) -> dict[str, Any]:
     config_file = Path(path)
 
     if not config_file.exists():
-        # Return default permissions if file doesn't exist
-        _permissions_cache = _get_default_permissions()
-        return _permissions_cache
+        base = _get_default_permissions()
+    else:
+        try:
+            with open(config_file) as f:
+                base = yaml.safe_load(f) or {}
+        except yaml.YAMLError as e:
+            logger.error("Failed to parse permissions YAML file '%s': %s", path, e)
+            logger.warning("Using default permissions due to YAML parse error")
+            base = _get_default_permissions()
 
-    try:
-        with open(config_file) as f:
-            _permissions_cache = yaml.safe_load(f) or {}
-            return _permissions_cache
-    except yaml.YAMLError as e:
-        # Log the error and return defaults on parse error
-        logger.error("Failed to parse permissions YAML file '%s': %s", path, e)
-        logger.warning("Using default permissions due to YAML parse error")
-        _permissions_cache = _get_default_permissions()
-        return _permissions_cache
+    # Merge project-scoped overrides if present
+    project_file = Path(PROJECT_CONFIG)
+    if project_file.exists():
+        try:
+            with open(project_file) as f:
+                project = yaml.safe_load(f) or {}
+            base = _merge_permissions(base, project)
+            logger.info("Loaded project-scoped permissions from %s", PROJECT_CONFIG)
+        except yaml.YAMLError as e:
+            logger.warning("Ignoring invalid project config %s: %s", PROJECT_CONFIG, e)
+
+    _permissions_cache = base
+    return _permissions_cache
+
+
+def _merge_permissions(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Shallow-merge override onto base (one level deep for dict values)."""
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = {**merged[key], **value}
+        else:
+            merged[key] = value
+    return merged
 
 
 def get_permission(action_type: str) -> str:
