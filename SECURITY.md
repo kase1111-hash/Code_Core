@@ -139,7 +139,6 @@ Security updates are released as patch versions (e.g., 1.0.1). We recommend:
 The project includes comprehensive security testing:
 
 - **Static Analysis**: Ruff with flake8-bandit rules
-- **Penetration Tests**: See `docs/penetration_test_report.md`
 - **Security Tests**: `tests/test_security.py`, `tests/test_exploits.py`
 - **CI/CD Security Scanning**: `.github/workflows/security.yml`
 

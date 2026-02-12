@@ -267,8 +267,7 @@ ollama-automation-harness/
 │   └── environment.py      # Environment management
 │
 ├── config/                 # Configuration files
-│   ├── permissions.yaml    # Permission rules
-│   └── deploy.json         # Deployment config
+│   └── permissions.yaml    # Permission rules
 │
 ├── docs/                   # Documentation
 │   ├── FAQ.md              # Frequently asked questions
