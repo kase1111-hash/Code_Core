@@ -90,7 +90,7 @@ This document outlines the technology choices and dependencies for the Ollama Au
 ### Ollama (Local)
 - **Purpose:** Local LLM inference for decision classification
 - **Model:** `llama3` (default)
-- **Installation:** https://ollama.ai
+- **Installation:** https://ollama.com
 - **Requirement:** Must be running locally on default port
 
 ### Claude API (Remote)

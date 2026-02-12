@@ -232,7 +232,7 @@ def format_error_for_user(error: Exception) -> str:
         if error.code == ErrorCode.VALIDATION_FAILED:
             return f"Input error: {base_msg}"
         elif error.code == ErrorCode.OLLAMA_NOT_FOUND:
-            return "Ollama is not installed. Please install from https://ollama.ai"
+            return "Ollama is not installed. Please install from https://ollama.com"
         elif error.code == ErrorCode.CLAUDE_AUTH_ERROR:
             return "Claude API authentication failed. Check your ANTHROPIC_API_KEY."
         elif error.code == ErrorCode.COMMAND_TIMEOUT:
@@ -304,7 +304,7 @@ def get_recovery_suggestion(error: Exception) -> str | None:
             ErrorCode.VALIDATION_FAILED: "Check your input and try again.",
             ErrorCode.INVALID_PATH: "Ensure the path exists and is accessible.",
             ErrorCode.SHELL_INJECTION: "Remove shell special characters from input.",
-            ErrorCode.OLLAMA_NOT_FOUND: "Install Ollama: https://ollama.ai",
+            ErrorCode.OLLAMA_NOT_FOUND: "Install Ollama: https://ollama.com",
             ErrorCode.OLLAMA_TIMEOUT: "Check if Ollama service is running.",
             ErrorCode.CLAUDE_AUTH_ERROR: "Set ANTHROPIC_API_KEY environment variable.",
             ErrorCode.COMMAND_TIMEOUT: "Increase timeout or simplify the command.",

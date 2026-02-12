@@ -25,9 +25,9 @@ Run the built-in health check to identify issues:
 
 ```bash
 # Run system health check
-python -m cli check --verbose
+python cli.py check --verbose
 
-# Or using make
+# Or run code quality checks (lint + typecheck + security)
 make check
 ```
 
@@ -173,9 +173,8 @@ FileNotFoundError: config/permissions.yaml not found
 # Initialize configuration
 python -m cli config init
 
-# Or copy manually
-mkdir -p config
-cp config/permissions.yaml.example config/permissions.yaml
+# Or initialize via CLI
+python -m cli config init --force
 ```
 
 ### "Sandbox directory does not exist"
@@ -232,12 +231,12 @@ OllamaError: Ollama not found. Please install Ollama
 1. **Install Ollama:**
    ```bash
    # Linux
-   curl -fsSL https://ollama.ai/install.sh | sh
+   curl -fsSL https://ollama.com/install.sh | sh
 
    # macOS
    brew install ollama
 
-   # Or download from https://ollama.ai
+   # Or download from https://ollama.com
    ```
 
 2. **Verify installation:**
@@ -699,7 +698,7 @@ python main.py -v 2>&1 | ts '[%Y-%m-%d %H:%M:%S]' | tee debug.log
    ```
 
 3. **Search existing issues:**
-   - [GitHub Issues](https://github.com/example/ollama-harness/issues)
+   - [GitHub Issues](https://github.com/kase1111-hash/Code_Core/issues)
 
 ### Information to Include
 
@@ -776,4 +775,4 @@ When reporting issues, include:
 
 ---
 
-*Last updated: 2024-01-15*
+*Last updated: 2025-02-12*

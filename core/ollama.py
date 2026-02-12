@@ -76,7 +76,7 @@ def run_prompt(prompt: str, model: str = OLLAMA_MODEL) -> str:
 
         except FileNotFoundError as e:
             raise OllamaError(
-                "Ollama not found. Please install Ollama: https://ollama.ai",
+                "Ollama not found. Please install Ollama: https://ollama.com",
                 code=ErrorCode.OLLAMA_NOT_FOUND,
             ) from e
 
@@ -146,6 +146,6 @@ def list_models() -> list[str]:
 
     except FileNotFoundError as e:
         raise OllamaError(
-            "Ollama not found. Please install Ollama: https://ollama.ai",
+            "Ollama not found. Please install Ollama: https://ollama.com",
             code=ErrorCode.OLLAMA_NOT_FOUND,
         ) from e

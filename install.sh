@@ -131,7 +131,7 @@ check_ollama() {
         return 0
     else
         log_warning "Ollama not found. Install it for local LLM support."
-        echo "  Visit: https://ollama.ai/download"
+        echo "  Visit: https://ollama.com/download"
         return 1
     fi
 }

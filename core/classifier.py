@@ -30,7 +30,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 Rules:
 - "auto": Safe operations (run tests, generate code, read files, write to sandbox)
 - "user": Dangerous operations (git push, deploy, delete, modify system files)
-- Always "user" for: deploy, production, push, sudo, rm -rf, chmod
+- Always "user" for: deploy, production, push, sudo, rm -rf, chmod, chown, curl, wget, eval, exec
 - risk_level: "low" for read-only, "medium" for sandbox writes, "high" for system changes
 '''
 

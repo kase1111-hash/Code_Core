@@ -22,15 +22,15 @@ A **human-AI collaboration** platform that pairs Claude with Ollama for **LLM-po
 ### Prerequisites
 
 - Python 3.10+
-- [Ollama](https://ollama.ai) installed with `llama3` model
+- [Ollama](https://ollama.com) installed with `llama3` model
 - (Optional) Anthropic API key for Claude
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ollama-automation-harness.git
-cd ollama-automation-harness
+git clone https://github.com/kase1111-hash/Code_Core.git
+cd Code_Core
 
 # Create virtual environment
 make setup
@@ -96,19 +96,44 @@ Control which actions require approval:
 
 ```yaml
 actions:
+  # File operations
   read_file: auto      # Execute without asking
   write_file: ask      # Require user confirmation
+  delete_file: ask
+
+  # Code operations
   run_tests: auto      # Tests run automatically
+  lint_code: auto
+  format_code: auto
+
+  # Git operations
+  git_status: auto
+  git_diff: auto
+  git_add: ask
+  git_commit: ask
   git_push: ask        # Require user confirmation
+  git_pull: ask
+
+  # Dangerous operations
   deploy: deny         # Block entirely
+  deploy_production: deny
+  system_command: deny
+  install_package: ask
 
 default: ask           # Default for unknown actions
 
 dangerous_keywords:    # Always require approval
   - deploy
   - production
+  - push
   - sudo
   - rm -rf
+  - chmod
+  - chown
+  - curl
+  - wget
+  - eval
+  - exec
 ```
 
 ### Environment Variables
@@ -118,13 +143,23 @@ dangerous_keywords:    # Always require approval
 | `ANTHROPIC_API_KEY` | Claude API key | (Ollama fallback) |
 | `OLLAMA_MODEL` | Ollama model name | `llama3` |
 | `CLAUDE_MODEL` | Claude model name | `claude-sonnet-4-20250514` |
+| `CLAUDE_MAX_TOKENS` | Maximum tokens for Claude response | `4096` |
 | `SANDBOX_DIR` | Sandbox directory | `./sandbox` |
+| `PERMISSIONS_FILE` | Permissions config file path | `./config/permissions.yaml` |
 | `LOG_FILE` | Log file path | `./logs/automation.log` |
 | `OLLAMA_TIMEOUT` | Ollama timeout (seconds) | `60` |
 | `COMMAND_TIMEOUT` | Command timeout (seconds) | `30` |
+| `MAX_RETRIES` | Maximum retry attempts for Ollama | `3` |
+| `RETRY_DELAY` | Delay between retries (seconds) | `1.0` |
+| `LOOP_DELAY` | Delay between automation loop iterations (seconds) | `1.0` |
+| `MAX_REPLY_LENGTH` | Maximum characters to display from AI reply | `2000` |
+| `ENVIRONMENT` | Environment mode (`development`, `staging`, `production`, `testing`) | `development` |
 | `DEBUG` | Enable debug mode | `false` |
+| `SENTRY_DSN` | Sentry DSN for error tracking (optional) | (none) |
 
 ### CLI Commands
+
+**Basic usage (`main.py`):**
 
 ```bash
 # Start interactive mode
@@ -136,18 +171,48 @@ python main.py -p "Create a fibonacci function"
 # Read prompt from file
 python main.py -f prompt.txt
 
-# Use custom config
-python main.py --config custom-permissions.yaml
+# Use custom config and sandbox
+python main.py --config custom-permissions.yaml --sandbox /tmp/safe
 
-# Enhanced CLI
-python cli.py run              # Start harness
-python cli.py config show      # Show configuration
+# Verbose or quiet mode
+python main.py -v          # Verbose output
+python main.py -q          # Quiet mode
+```
+
+**Enhanced CLI (`cli.py`):**
+
+```bash
+# Run harness with all available options
+python cli.py run                          # Start interactive mode
+python cli.py run -p "Create a test"       # Run with initial prompt
+python cli.py run -f prompt.txt            # Read prompt from file
+python cli.py run --dry-run                # Show what would be done without executing
+python cli.py run --no-confirm             # Auto-approve low-risk actions (use with caution)
+python cli.py run --model codellama        # Override the AI model
+python cli.py run --timeout 120            # Set command timeout (seconds)
+python cli.py run -e production            # Override environment
+
+# Configuration management
+python cli.py config show      # Show current configuration
 python cli.py config validate  # Validate configuration
+python cli.py config init      # Initialize default config files
+python cli.py config init --force  # Overwrite existing config files
+python cli.py config path      # Show config file paths
+
+# System health checks
 python cli.py check            # Run health checks
-python cli.py check --fix      # Fix common issues
-python cli.py version          # Show version info
-python cli.py metrics          # Show telemetry
+python cli.py check --fix      # Fix common issues automatically
+python cli.py check -v         # Verbose health check output
+
+# Version and monitoring
+python cli.py version          # Show version and system info
+python cli.py metrics          # Show telemetry (text format)
+python cli.py metrics -f json  # Show metrics in JSON format
+python cli.py metrics -f prometheus  # Show metrics in Prometheus format
+python cli.py metrics --save metrics.json  # Save metrics to file
 python cli.py status           # Show health status
+python cli.py status -w        # Watch status continuously (refresh every 5s)
+python cli.py status -f json   # Show status in JSON format
 ```
 
 ## Quick Help
@@ -156,7 +221,7 @@ python cli.py status           # Show health status
 
 | Issue | Solution |
 |-------|----------|
-| "Ollama not found" | Install from [ollama.ai](https://ollama.ai), run `ollama serve` |
+| "Ollama not found" | Install from [ollama.com](https://ollama.com), run `ollama serve` |
 | "API key not set" | Add `ANTHROPIC_API_KEY=sk-ant-...` to `.env` (optional) |
 | Slow responses | Use `OLLAMA_MODEL=phi` for faster inference |
 | Permission denied | Check `config/permissions.yaml` settings |
@@ -206,7 +271,9 @@ ollama-automation-harness/
 │   ├── telemetry.py        # Telemetry collection
 │   ├── metrics.py          # Metrics registry
 │   ├── monitoring.py       # Health monitoring
-│   └── version.py          # Version info
+│   ├── version.py          # Version info
+│   ├── error_tracking.py   # Sentry/ELK error tracking
+│   └── environment.py      # Environment management
 │
 ├── config/                 # Configuration files
 │   ├── permissions.yaml    # Permission rules
@@ -244,11 +311,29 @@ pre-commit install
 ### Common Commands
 
 ```bash
-make lint        # Run linter
-make format      # Format code
-make typecheck   # Run type checker
-make test        # Run tests
-make coverage    # Run tests with coverage
+# Code quality
+make lint          # Run linter (ruff)
+make format        # Format code (ruff)
+make typecheck     # Run type checker (mypy)
+make security      # Run security analysis (bandit)
+make check         # Run all quality checks (lint + typecheck + security)
+
+# Testing
+make test          # Run all tests
+make test-fast     # Run tests, stop on first failure
+make test-unit     # Run unit tests only
+make test-integration  # Run integration tests
+make test-security     # Run security tests
+make test-performance  # Run performance tests
+make test-regression   # Run regression tests
+make coverage      # Run tests with coverage report
+
+# Build & package
+make build         # Build distribution packages
+make package-zip   # Create zip distribution
+make package-exe   # Create standalone executable
+make package-docker  # Build production Docker image
+make package-all   # Create all distribution packages
 ```
 
 ### Using Docker
@@ -268,7 +353,7 @@ make docker-dev
 
 The harness implements multiple **AI security monitoring** layers as a **cognitive firewall** for automated operations:
 
-1. **Keyword Detection**: Commands with dangerous keywords (`deploy`, `sudo`, `rm -rf`, etc.) always require approval - acting as **cognition boundary control**
+1. **Keyword Detection**: Commands with dangerous keywords (`deploy`, `production`, `push`, `sudo`, `rm -rf`, `chmod`, `chown`, `curl`, `wget`, `eval`, `exec`) always require approval - acting as **cognition boundary control**
 2. **Permission System**: YAML configuration provides **AI boundary policy** for action authorization
 3. **Sandbox Enforcement**: **Agent trust boundaries** restrict file operations to sandbox directory
 4. **Path Validation**: **Cognitive access control** prevents path traversal (`../`) attacks
@@ -329,7 +414,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - [Anthropic](https://anthropic.com) for Claude
-- [Ollama](https://ollama.ai) for local LLM inference
+- [Ollama](https://ollama.com) for local LLM inference
 
 ---
 
