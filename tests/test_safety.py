@@ -311,7 +311,7 @@ class TestGetDefaultPermissions:
         keywords = defaults["dangerous_keywords"]
         assert "deploy" in keywords
         assert "sudo" in keywords
-        assert "rm -rf" in keywords
+        assert r"/rm\s+-r/" in keywords
 
     def test_default_permissions_sandbox(self):
         """Test default sandbox settings."""
