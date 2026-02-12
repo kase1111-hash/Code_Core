@@ -7,6 +7,7 @@ development workflows with human oversight.
 """
 
 import argparse
+import json
 import os
 import readline  # noqa: F401 — imported for input() history side-effect
 import sys
@@ -162,6 +163,16 @@ def main() -> None:
         action="store_true",
         help="Suppress non-essential output",
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output decisions as JSON (for scripting/piping)",
+    )
+    parser.add_argument(
+        "--single",
+        action="store_true",
+        help="Run one iteration then exit (for scripting)",
+    )
     args = parser.parse_args()
 
     # Read prompt from file if specified
@@ -219,9 +230,10 @@ def main() -> None:
                 permissions,
                 args.sandbox,
                 args.verbose,
+                json_mode=args.json,
             )
 
-            if next_prompt is None:
+            if next_prompt is None or args.single:
                 break
 
             current_prompt = next_prompt
@@ -253,11 +265,17 @@ def main() -> None:
     print("\nGoodbye!")
 
 
+def _emit_json(data: dict) -> None:
+    """Write a JSON object to stdout (one line, for piping)."""
+    print(json.dumps(data, default=str))
+
+
 def process_iteration(
     prompt: str,
     permissions: PermissionManager,
     sandbox_root: str,
     verbose: bool = False,
+    json_mode: bool = False,
 ) -> str | None:
     """
     Process a single iteration of the automation loop.
@@ -267,6 +285,7 @@ def process_iteration(
         permissions: Permission manager instance
         sandbox_root: Path to sandbox directory
         verbose: Enable verbose output
+        json_mode: Output decisions as JSON instead of human text
 
     Returns:
         Next prompt or None to exit
@@ -276,31 +295,53 @@ def process_iteration(
         try:
             prompt = validate_prompt(prompt)
         except ValidationError as e:
+            if json_mode:
+                _emit_json({"error": f"Invalid prompt: {e}"})
+                return None
             print(f"\n[Error]: Invalid prompt - {e}")
             return get_next_prompt(sandbox_root=sandbox_root)
 
         # Get Claude's response
-        print(f"\n[Prompt]: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
-        print("[Thinking...]")
+        if not json_mode:
+            print(f"\n[Prompt]: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
+            print("[Thinking...]")
 
         claude_reply = get_response(prompt)
         claude_reply = validate_response(claude_reply)
-        display_response(claude_reply)
+        if not json_mode:
+            display_response(claude_reply)
 
         # Classify the action
         decision = classify(claude_reply)
         decision = permissions.enforce(decision)
 
-        print(f"\n[Decision]: {_action_color(decision.action)} ({decision.reason})")
-        print(f"[Risk]: {_risk_color(decision.risk_level)}")
-        if decision.command:
-            print(f"[Command]: {decision.command[:100]}")
+        if json_mode:
+            json_record: dict = {
+                "action": decision.action,
+                "reason": decision.reason,
+                "risk_level": decision.risk_level,
+                "command": decision.command,
+            }
+
+        if not json_mode:
+            print(f"\n[Decision]: {_action_color(decision.action)} ({decision.reason})")
+            print(f"[Risk]: {_risk_color(decision.risk_level)}")
+            if decision.command:
+                print(f"[Command]: {decision.command[:100]}")
 
         if decision.action == "auto":
             # Execute automatically
             if decision.command:
                 result = execute(decision.command, sandbox_root)
                 log_action("auto_exec", decision, result)
+
+                if json_mode:
+                    json_record["success"] = result.success
+                    json_record["output"] = result.output[:2000] if result.output else None
+                    json_record["error"] = result.error if not result.success else None
+                    json_record["return_code"] = result.return_code
+                    _emit_json(json_record)
+                    return build_continuation_prompt(claude_reply, result)
 
                 if result.success:
                     print("\n[Result]: Success")
@@ -312,15 +353,27 @@ def process_iteration(
                 # Build continuation prompt
                 return build_continuation_prompt(claude_reply, result)
             else:
+                if json_mode:
+                    json_record["success"] = True
+                    json_record["output"] = None
+                    _emit_json(json_record)
+                    return None
                 print("\n[Info]: No command to execute")
                 return get_next_prompt(sandbox_root=sandbox_root)
 
         else:  # "user" action required
+            if json_mode:
+                json_record["requires_approval"] = True
+                _emit_json(json_record)
+                return None
             return handle_user_action(decision, permissions, sandbox_root)
 
     except ClaudeError as e:
         log_error(e, "get_response")
         capture_exception(e, context="get_response")
+        if json_mode:
+            _emit_json({"error": str(e)})
+            return None
         print(f"\n[Error]: {format_error_for_user(e)}")
         suggestion = get_recovery_suggestion(wrap_exception(e, "get_response"))
         if suggestion:
@@ -330,6 +383,9 @@ def process_iteration(
     except HarnessError as e:
         log_error(e, "process_iteration")
         capture_exception(e, context="process_iteration")
+        if json_mode:
+            _emit_json({"error": str(e)})
+            return None
         print(f"\n[Error]: {format_error_for_user(e)}")
         if is_recoverable(e):
             suggestion = get_recovery_suggestion(e)
@@ -342,6 +398,9 @@ def process_iteration(
         wrapped = wrap_exception(e, "process_iteration")
         log_error(wrapped, "process_iteration")
         capture_exception(e, context="process_iteration")
+        if json_mode:
+            _emit_json({"error": str(e)})
+            return None
         print(f"\n[Error]: {format_error_for_user(wrapped)}")
         return get_next_prompt(sandbox_root=sandbox_root)
 

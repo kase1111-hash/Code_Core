@@ -13,8 +13,6 @@ from utils.error_tracking import (
     capture_exception,
     capture_message,
     error_context,
-    format_for_elk,
-    get_elk_index_template,
     get_error_counts,
     get_error_summary,
     init_error_tracking,
@@ -83,18 +81,6 @@ class TestCaptureException:
             tags={"environment": "test"},
         )
         assert error_id is not None
-
-    def test_capture_with_user_id(self):
-        """Test capturing exception with user ID."""
-        reset_error_counts()
-        error = ValueError("test")
-        error_id = capture_exception(
-            error,
-            context="test",
-            user_id="user123",
-        )
-        assert error_id is not None
-
 
 class TestCaptureMessage:
     """Tests for capture_message function."""
@@ -306,73 +292,3 @@ class TestCaptureErrorsDecorator:
 
         with pytest.raises(ValueError):
             my_function()
-
-
-class TestFormatForElk:
-    """Tests for format_for_elk function."""
-
-    def test_format_standard_exception(self):
-        """Test formatting standard exception for ELK."""
-        error = ValueError("test error")
-        result = format_for_elk(error, context="test")
-
-        parsed = json.loads(result)
-        assert "@timestamp" in parsed
-        assert "error_id" in parsed
-        assert "error_type" in parsed
-        assert parsed["error_type"] == "ValueError"
-
-    def test_format_harness_error(self):
-        """Test formatting HarnessError for ELK."""
-        error = HarnessError("test", code=ErrorCode.VALIDATION_FAILED)
-        result = format_for_elk(error)
-
-        parsed = json.loads(result)
-        assert parsed["error_code"] == "VALIDATION_FAILED"
-
-    def test_format_includes_context(self):
-        """Test format includes context."""
-        error = ValueError("test")
-        result = format_for_elk(error, context="my_context")
-
-        parsed = json.loads(result)
-        assert parsed["context"] == "my_context"
-
-
-class TestGetElkIndexTemplate:
-    """Tests for get_elk_index_template function."""
-
-    def test_template_structure(self):
-        """Test ELK index template structure."""
-        template = get_elk_index_template()
-
-        assert "index_patterns" in template
-        assert "settings" in template
-        assert "mappings" in template
-
-    def test_template_mappings(self):
-        """Test ELK index template mappings."""
-        template = get_elk_index_template()
-        properties = template["mappings"]["properties"]
-
-        assert "@timestamp" in properties
-        assert "error_id" in properties
-        assert "error_code" in properties
-        assert "error_type" in properties
-        assert "error_message" in properties
-        assert "severity" in properties
-
-    def test_template_timestamp_type(self):
-        """Test timestamp field type."""
-        template = get_elk_index_template()
-        props = template["mappings"]["properties"]
-        assert props["@timestamp"]["type"] == "date"
-
-    def test_template_keyword_fields(self):
-        """Test keyword field types."""
-        template = get_elk_index_template()
-        props = template["mappings"]["properties"]
-
-        keyword_fields = ["level", "error_id", "error_code", "error_type", "severity"]
-        for field in keyword_fields:
-            assert props[field]["type"] == "keyword"

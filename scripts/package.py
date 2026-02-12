@@ -248,7 +248,6 @@ def build_exe() -> Path:
         "--hidden-import", "dotenv",
         "--hidden-import", "yaml",
         "--hidden-import", "anthropic",
-        "--hidden-import", "sentry_sdk",
         # Entry point
         str(PROJECT_ROOT / "main.py"),
     ]
@@ -272,39 +271,6 @@ def build_exe() -> Path:
     return None
 
 
-def build_docker(tag: str = None) -> bool:
-    """Build Docker image."""
-    version = get_version()
-    tag = tag or f"ollama-harness:{version}"
-
-    print(f"Building Docker image: {tag}")
-
-    cmd = [
-        "docker", "build",
-        "-f", "Dockerfile.prod",
-        "-t", tag,
-        "-t", "ollama-harness:latest",
-        ".",
-    ]
-
-    result = subprocess.run(cmd, cwd=PROJECT_ROOT)
-
-    if result.returncode == 0:
-        print(f"Created Docker image: {tag}")
-
-        # Optionally save to tar
-        tar_path = DIST_DIR / f"ollama-harness-{version}-docker.tar"
-        save_cmd = ["docker", "save", "-o", str(tar_path), tag]
-        save_result = subprocess.run(save_cmd, capture_output=True)
-
-        if save_result.returncode == 0:
-            print(f"Saved to: {tar_path}")
-            print(f"Size: {tar_path.stat().st_size / (1024*1024):.1f} MB")
-
-        return True
-    return False
-
-
 def build_all():
     """Build all package formats."""
     results = {}
@@ -312,7 +278,6 @@ def build_all():
     results["zip"] = build_zip()
     results["wheel"] = build_wheel()
     results["exe"] = build_exe()
-    results["docker"] = build_docker()
 
     print("\n" + "=" * 60)
     print("Build Summary")
@@ -331,17 +296,13 @@ def main():
     )
     parser.add_argument(
         "format",
-        choices=["zip", "wheel", "exe", "docker", "all", "clean"],
+        choices=["zip", "wheel", "exe", "all", "clean"],
         help="Package format to build",
     )
     parser.add_argument(
         "--no-clean",
         action="store_true",
         help="Skip cleaning previous builds",
-    )
-    parser.add_argument(
-        "--docker-tag",
-        help="Custom Docker tag (for docker format)",
     )
 
     args = parser.parse_args()
@@ -370,8 +331,6 @@ def main():
         success = build_wheel() is not None
     elif args.format == "exe":
         success = build_exe() is not None
-    elif args.format == "docker":
-        success = build_docker(args.docker_tag)
     elif args.format == "all":
         success = build_all()
 

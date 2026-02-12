@@ -267,13 +267,6 @@ def configure_api_keys() -> dict:
     if api_key:
         config["ANTHROPIC_API_KEY"] = api_key
 
-    # Sentry DSN (optional)
-    if prompt_yes_no("\nConfigure error tracking (Sentry)?", default=False):
-        print_info("Get your Sentry DSN at: https://sentry.io/")
-        sentry_dsn = prompt("Enter Sentry DSN")
-        if sentry_dsn:
-            config["SENTRY_DSN"] = sentry_dsn
-
     return config
 
 

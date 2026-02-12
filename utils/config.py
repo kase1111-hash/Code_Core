@@ -140,12 +140,6 @@ LOG_FORMAT = os.getenv("LOG_FORMAT", "verbose")
 RATE_LIMITING = os.getenv("RATE_LIMITING", "true").lower() in ("true", "1", "yes")
 TEST_MODE = os.getenv("TEST_MODE", "false").lower() in ("true", "1", "yes")
 DETAILED_ERRORS = os.getenv("DETAILED_ERRORS", "false").lower() in ("true", "1", "yes")
-METRICS_ENABLED = os.getenv("METRICS_ENABLED", "false").lower() in ("true", "1", "yes")
-HEALTH_CHECK_ENABLED = os.getenv("HEALTH_CHECK_ENABLED", "false").lower() in (
-    "true",
-    "1",
-    "yes",
-)
 
 
 # =============================================================================
@@ -189,8 +183,6 @@ def get_config_dict() -> dict[str, Any]:
         "rate_limiting": RATE_LIMITING,
         "test_mode": TEST_MODE,
         "detailed_errors": DETAILED_ERRORS,
-        "metrics_enabled": METRICS_ENABLED,
-        "health_check_enabled": HEALTH_CHECK_ENABLED,
     }
 
 
