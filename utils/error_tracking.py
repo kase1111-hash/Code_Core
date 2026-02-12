@@ -1,10 +1,7 @@
 """
 Error tracking and reporting module.
 
-Provides structured error logging compatible with:
-- Sentry (optional, when SDK is installed)
-- ELK stack (Elasticsearch, Logstash, Kibana)
-- Custom error aggregation and tracking
+Provides structured error logging with optional Sentry integration.
 """
 
 from __future__ import annotations
@@ -145,7 +142,6 @@ def capture_exception(
     error: Exception,
     context: str | None = None,
     extra: dict[str, Any] | None = None,
-    user_id: str | None = None,
     tags: dict[str, str] | None = None,
 ) -> str:
     """
@@ -155,7 +151,6 @@ def capture_exception(
         error: The exception to capture
         context: Context description (what was happening)
         extra: Additional data to include
-        user_id: Optional user identifier
         tags: Optional tags for categorization
 
     Returns:
@@ -170,7 +165,6 @@ def capture_exception(
         error_id=error_id,
         context=context,
         extra=extra,
-        user_id=user_id,
         tags=tags,
     )
 
@@ -245,7 +239,6 @@ def _build_error_record(
     error_id: str,
     context: str | None = None,
     extra: dict[str, Any] | None = None,
-    user_id: str | None = None,
     tags: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Build a structured error record for logging."""
@@ -271,37 +264,21 @@ def _build_error_record(
     frames = _extract_stack_frames(error)
 
     record = {
-        # ELK standard fields
         "@timestamp": datetime.utcnow().isoformat() + "Z",
         "level": "ERROR",
         "logger": "ollama-harness",
-
-        # Error identification
         "error_id": error_id,
         "error_code": error_code,
         "error_type": type(error).__name__,
         "error_message": str(error)[:1000],
-
-        # Severity and classification
         "severity": severity,
         "tags": tags or {},
-
-        # Context
         "context": context,
         "extra": _sanitize_extra(extra or {}),
-
-        # Stack trace
         "stack_trace": stack_trace,
         "frames": frames,
-
-        # User info (if provided)
-        "user_id": user_id,
-
-        # Environment
         "environment": os.getenv("ENVIRONMENT", "development"),
         "python_version": sys.version,
-
-        # Original error data
         "error_data": error_data,
     }
 
@@ -395,10 +372,6 @@ def _send_to_sentry(error: Exception, record: dict[str, Any]) -> None:
             # Add extra data
             for key, value in record.get("extra", {}).items():
                 scope.set_extra(key, value)
-
-            # Set user if provided
-            if record.get("user_id"):
-                scope.set_user({"id": record["user_id"]})
 
             sentry_sdk.capture_exception(error)
 
@@ -556,60 +529,3 @@ def capture_errors(
                 return None
         return wrapper
     return decorator
-
-
-# =============================================================================
-# ELK-specific utilities
-# =============================================================================
-
-
-def format_for_elk(error: Exception, context: str = "") -> str:
-    """
-    Format an error as ELK-compatible JSON string.
-
-    Args:
-        error: Exception to format
-        context: Context description
-
-    Returns:
-        JSON string suitable for ELK ingestion
-    """
-    record = _build_error_record(
-        error=error,
-        error_id=_generate_error_id(),
-        context=context,
-    )
-    return json.dumps(record, default=str)
-
-
-def get_elk_index_template() -> dict[str, Any]:
-    """
-    Get Elasticsearch index template for error logs.
-
-    Returns:
-        Index template configuration
-    """
-    return {
-        "index_patterns": ["ollama-harness-errors-*"],
-        "settings": {
-            "number_of_shards": 1,
-            "number_of_replicas": 0,
-        },
-        "mappings": {
-            "properties": {
-                "@timestamp": {"type": "date"},
-                "level": {"type": "keyword"},
-                "error_id": {"type": "keyword"},
-                "error_code": {"type": "keyword"},
-                "error_type": {"type": "keyword"},
-                "error_message": {"type": "text"},
-                "severity": {"type": "keyword"},
-                "context": {"type": "text"},
-                "stack_trace": {"type": "text"},
-                "environment": {"type": "keyword"},
-                "user_id": {"type": "keyword"},
-                "tags": {"type": "object"},
-                "extra": {"type": "object"},
-            }
-        }
-    }

@@ -28,8 +28,6 @@ from utils.error_tracking import (
     capture_exception,
     capture_message,
     error_context,
-    format_for_elk,
-    get_elk_index_template,
     get_error_counts,
     get_error_summary,
     init_error_tracking,
@@ -193,8 +191,6 @@ __all__ = [
     "unregister_error_callback",
     "error_context",
     "capture_errors",
-    "format_for_elk",
-    "get_elk_index_template",
     # Secrets
     "Environment",
     "SecureConfig",

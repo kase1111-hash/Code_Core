@@ -309,7 +309,7 @@ def _get_default_permissions() -> dict[str, Any]:
             "production",
             "push",
             "sudo",
-            "rm -rf",
+            r"/rm\s+-r/",
             "chmod",
             "chown",
             "curl",
