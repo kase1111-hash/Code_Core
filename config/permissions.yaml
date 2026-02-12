@@ -33,14 +33,16 @@ actions:
 # Default permission for unknown action types
 default: ask
 
-# Keywords that always force "user" action regardless of classification
-# These override both classifier decisions and action permissions
+# Keywords that always force "user" action regardless of classification.
+# These override both classifier decisions and action permissions.
+# Plain strings are matched as literal substrings.
+# Wrap in /.../ for regex (e.g. /rm\s+-r/ matches rm -r, rm -rf, rm -ri).
 dangerous_keywords:
   - deploy
   - production
   - push
   - sudo
-  - rm -rf
+  - /rm\s+-r/
   - chmod
   - chown
   - curl

@@ -6,8 +6,10 @@ Modules:
     logger: Audit trail and error logging
     validation: Input validation and sanitation
     errors: Centralized error handling
-    error_tracking: Sentry/ELK error tracking integration
+    error_tracking: Error tracking and counting
     secrets: Secure configuration and secrets management
+    version: Version information
+    environment: Environment detection
 """
 
 from utils.config import (

@@ -556,3 +556,199 @@ class TestConcurrentOperations:
         counts = get_error_counts()
         assert counts.get("VALIDATION_FAILED", 0) >= 2
         assert counts.get("EXECUTION_FAILED", 0) >= 1
+
+
+# =============================================================================
+# Real Pipeline Integration Tests (Phase 3)
+# =============================================================================
+
+
+class TestActionTypeInference:
+    """Tests for regex-based action type inference."""
+
+    def _make_decision(self, command):
+        return Decision(action="auto", reason="test", command=command, risk_level="low")
+
+    def test_infer_install_package_pip(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("pip install requests")) == "install_package"
+        assert manager._infer_action_type(self._make_decision("pip3 install -r requirements.txt")) == "install_package"
+
+    def test_infer_install_package_npm(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("npm install lodash")) == "install_package"
+        assert manager._infer_action_type(self._make_decision("npm ci")) == "install_package"
+
+    def test_infer_install_package_system(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("apt-get install curl")) == "install_package"
+        assert manager._infer_action_type(self._make_decision("brew install python")) == "install_package"
+
+    def test_infer_remote_command(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("ssh user@host")) == "remote_command"
+        assert manager._infer_action_type(self._make_decision("scp file.txt host:/tmp/")) == "remote_command"
+
+    def test_infer_system_command(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("docker run nginx")) == "system_command"
+        assert manager._infer_action_type(self._make_decision("kubectl get pods")) == "system_command"
+
+    def test_infer_lint_and_format(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("ruff check .")) == "lint_code"
+        assert manager._infer_action_type(self._make_decision("ruff format .")) == "format_code"
+        assert manager._infer_action_type(self._make_decision("black --check src/")) == "lint_code"
+        assert manager._infer_action_type(self._make_decision("black --fix src/")) == "format_code"
+
+    def test_infer_git_add_and_status(self, tmp_path):
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("git add .")) == "git_add"
+        assert manager._infer_action_type(self._make_decision("git status")) == "git_status"
+        assert manager._infer_action_type(self._make_decision("git diff HEAD")) == "git_status"
+
+    def test_infer_preserves_existing_types(self, tmp_path):
+        """Ensure original action types still work after regex rewrite."""
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        assert manager._infer_action_type(self._make_decision("git push origin main")) == "git_push"
+        assert manager._infer_action_type(self._make_decision("git commit -m 'msg'")) == "git_commit"
+        assert manager._infer_action_type(self._make_decision("rm file.txt")) == "delete_file"
+        assert manager._infer_action_type(self._make_decision("cat file.txt")) == "read_file"
+        assert manager._infer_action_type(self._make_decision("pytest tests/")) == "run_tests"
+        assert manager._infer_action_type(self._make_decision("some random thing")) == "default"
+
+
+class TestRegexDangerousKeywords:
+    """Tests for regex-based dangerous keyword matching."""
+
+    def test_regex_pattern_matches(self, tmp_path):
+        config_file = tmp_path / "perms.yaml"
+        config_file.write_text(
+            "dangerous_keywords:\n"
+            '  - /rm\\s+-r/\n'
+            "  - sudo\n"
+        )
+        import core.safety
+        core.safety._permissions_cache = None
+        manager = PermissionManager(str(config_file))
+
+        assert manager._contains_dangerous_keyword("rm -r folder") is True
+        assert manager._contains_dangerous_keyword("rm -rf /") is True
+        assert manager._contains_dangerous_keyword("rm -ri folder") is True
+        assert manager._contains_dangerous_keyword("rm file.txt") is False
+
+    def test_plain_keyword_still_works(self, tmp_path):
+        config_file = tmp_path / "perms.yaml"
+        config_file.write_text(
+            "dangerous_keywords:\n"
+            "  - sudo\n"
+            "  - deploy\n"
+        )
+        import core.safety
+        core.safety._permissions_cache = None
+        manager = PermissionManager(str(config_file))
+
+        assert manager._contains_dangerous_keyword("sudo apt-get update") is True
+        assert manager._contains_dangerous_keyword("echo hello") is False
+
+    def test_invalid_regex_falls_back_to_literal(self, tmp_path):
+        config_file = tmp_path / "perms.yaml"
+        config_file.write_text(
+            "dangerous_keywords:\n"
+            '  - /[invalid/\n'
+        )
+        import core.safety
+        core.safety._permissions_cache = None
+        manager = PermissionManager(str(config_file))
+
+        # Falls back to literal match of "[invalid"
+        assert manager._contains_dangerous_keyword("has [invalid in it") is True
+
+
+class TestProjectScopedConfig:
+    """Tests for project-scoped .ollama-harness.yaml merging."""
+
+    def test_merge_overrides_actions(self):
+        from core.safety import _merge_permissions
+        base = {"actions": {"read_file": "auto", "deploy": "deny"}, "default": "ask"}
+        override = {"actions": {"deploy": "ask"}}
+        merged = _merge_permissions(base, override)
+        assert merged["actions"]["deploy"] == "ask"
+        assert merged["actions"]["read_file"] == "auto"
+        assert merged["default"] == "ask"
+
+    def test_merge_adds_new_keys(self):
+        from core.safety import _merge_permissions
+        base = {"actions": {"read_file": "auto"}}
+        override = {"actions": {"custom_action": "deny"}, "extra": "value"}
+        merged = _merge_permissions(base, override)
+        assert merged["actions"]["custom_action"] == "deny"
+        assert merged["extra"] == "value"
+
+    def test_merge_replaces_non_dict(self):
+        from core.safety import _merge_permissions
+        base = {"default": "ask", "dangerous_keywords": ["sudo"]}
+        override = {"default": "deny", "dangerous_keywords": ["deploy"]}
+        merged = _merge_permissions(base, override)
+        assert merged["default"] == "deny"
+        assert merged["dangerous_keywords"] == ["deploy"]
+
+
+class TestRealSubprocessExecution:
+    """Tests that run real subprocesses in the sandbox (no mocks)."""
+
+    def test_echo_captures_output(self, tmp_path):
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+        result = execute("echo hello world", str(sandbox))
+        assert result.success is True
+        assert "hello world" in result.output
+
+    def test_python_expression(self, tmp_path):
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+        result = execute("python3 -c \"print(2 + 2)\"", str(sandbox))
+        assert result.success is True
+        assert "4" in result.output
+
+    def test_write_and_read_file_via_subprocess(self, tmp_path):
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+        # Write via file operation, read via subprocess
+        write_file_sandboxed("data.txt", "test content 42", str(sandbox))
+        result = execute("cat data.txt", str(sandbox))
+        assert result.success is True
+        assert "test content 42" in result.output
+
+    def test_failed_command_returns_error(self, tmp_path):
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+        result = execute("ls nonexistent_dir_12345", str(sandbox))
+        assert result.success is False
+        assert result.return_code != 0
+
+    def test_permission_pipeline_end_to_end(self, tmp_path):
+        """Test classify → enforce → execute without mocking safety/executor."""
+        sandbox = tmp_path / "sandbox"
+        sandbox.mkdir()
+        (sandbox / "data.txt").write_text("pipeline OK")
+
+        # Use 'cat data.txt' which infers as read_file → auto permission
+        decision = Decision(
+            action="auto",
+            reason="Safe read",
+            command="cat data.txt",
+            risk_level="low",
+        )
+
+        # Enforce through real PermissionManager (defaults)
+        manager = PermissionManager(str(tmp_path / "x.yaml"))
+        enforced = manager.enforce(decision)
+
+        # read_file is auto-approved in defaults
+        assert enforced.action == "auto"
+
+        # Execute for real
+        result = execute(enforced.command, str(sandbox))
+        assert result.success is True
+        assert "pipeline OK" in result.output
