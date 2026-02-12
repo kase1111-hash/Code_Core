@@ -34,7 +34,7 @@ Examples:
   %(prog)s check                    Run system health checks
   %(prog)s version                  Show version information
 
-For more information, visit: https://github.com/example/ollama-harness
+For more information, visit: https://github.com/kase1111-hash/Code_Core
         """,
     )
 
@@ -479,7 +479,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         print("[X] Ollama not found in PATH")
         checks_failed += 1
         if args.fix:
-            print("    Install from: https://ollama.ai")
+            print("    Install from: https://ollama.com")
 
     # Check required directories
     dirs_to_check = ["sandbox", "logs", "config"]

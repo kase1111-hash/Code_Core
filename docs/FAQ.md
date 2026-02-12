@@ -66,7 +66,7 @@ No, the API key is optional. If not provided, the harness will use Ollama for bo
 
 ### How do I install Ollama?
 
-Visit [ollama.ai](https://ollama.ai) and follow the installation instructions for your OS.
+Visit [ollama.com](https://ollama.com) and follow the installation instructions for your OS.
 
 After installation, pull the default model:
 ```bash
@@ -200,9 +200,16 @@ Edit `config/permissions.yaml`:
 dangerous_keywords:
   - deploy
   - production
+  - push
   - sudo
   - rm -rf
-  - your_custom_keyword
+  - chmod
+  - chown
+  - curl
+  - wget
+  - eval
+  - exec
+  - your_custom_keyword  # Add your own keywords here
 ```
 
 ### How do I allow specific actions without approval?
@@ -250,7 +257,7 @@ The harness is designed for development automation. For production use:
 - `deploy` - All deployment operations
 - `deploy_production` - Production deployments
 - `system_command` - Direct system commands
-- Commands containing: `sudo`, `rm -rf`, `chmod`, `chown`
+- Commands containing: `sudo`, `rm -rf`, `chmod`, `chown`, `curl`, `wget`, `eval`, `exec`, `push`, `production`
 
 ### Can the AI bypass security controls?
 
@@ -353,7 +360,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 
 ### Where can I get help?
 
-- [GitHub Issues](https://github.com/example/ollama-harness/issues)
+- [GitHub Issues](https://github.com/kase1111-hash/Code_Core/issues)
 - [Documentation](./README.md)
 - [Architecture Guide](./architecture.md)
 - [API Reference](./api-reference.md)
@@ -364,7 +371,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 
 If your question isn't answered here:
 1. Check the [Troubleshooting Guide](./troubleshooting.md)
-2. Search [existing issues](https://github.com/example/ollama-harness/issues)
+2. Search [existing issues](https://github.com/kase1111-hash/Code_Core/issues)
 3. Open a new issue with:
    - Your environment (OS, Python version)
    - Steps to reproduce
@@ -373,4 +380,4 @@ If your question isn't answered here:
 
 ---
 
-*Last updated: 2024-01-15*
+*Last updated: 2025-02-12*

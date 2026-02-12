@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - License file (MIT)
 - Changelog documentation
 
+### Fixed
+- Version mismatch in `main.py` (was `0.1.0`, should be `1.0.0` to match `utils/version.py`)
+- Inconsistent dangerous keywords list across `core/classifier.py`, `core/safety.py`, and `config/permissions.yaml`
+- Incorrect `permissions.yaml.example` file reference in troubleshooting guide (file does not exist)
+- Outdated Ollama URLs (`ollama.ai` → `ollama.com`) across documentation
+- Placeholder GitHub URLs replaced with actual repository URLs
+
+### Changed
+- README: Added complete CLI flag documentation for all `cli.py` subcommands
+- README: Updated permissions example to match actual `config/permissions.yaml`
+- README: Added all missing environment variables to configuration table
+- README: Added all available `make` targets to development commands
+- README: Updated project structure to include `error_tracking.py` and `environment.py`
+- FAQ: Updated Ollama installation URL
+- Troubleshooting: Fixed health check command (`python cli.py check` instead of `python -m cli check`)
+- API Reference: Updated dangerous keywords documentation to match actual configuration
+
 ---
 
 ## [1.0.0] - 2024-01-15
@@ -178,6 +195,6 @@ When contributing, please:
 
 ---
 
-[Unreleased]: https://github.com/example/ollama-harness/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/example/ollama-harness/compare/v0.1.0...v1.0.0
-[0.1.0]: https://github.com/example/ollama-harness/releases/tag/v0.1.0
+[Unreleased]: https://github.com/kase1111-hash/Code_Core/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/kase1111-hash/Code_Core/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/kase1111-hash/Code_Core/releases/tag/v0.1.0

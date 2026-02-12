@@ -130,7 +130,8 @@ class PermissionManager:
     def _contains_dangerous_keyword(self, command: str) -> bool:
         """Check if command contains dangerous keywords."""
         dangerous = self.permissions.get("dangerous_keywords", [
-            "deploy", "production", "push", "sudo", "rm -rf", "chmod"
+            "deploy", "production", "push", "sudo", "rm -rf",
+            "chmod", "chown", "curl", "wget", "eval", "exec",
         ])
         command_lower = command.lower()
         return any(keyword.lower() in command_lower for keyword in dangerous)
@@ -243,6 +244,11 @@ def _get_default_permissions() -> dict[str, Any]:
             "sudo",
             "rm -rf",
             "chmod",
+            "chown",
+            "curl",
+            "wget",
+            "eval",
+            "exec",
         ],
         "sandbox": {
             "root": "./sandbox",

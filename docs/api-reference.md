@@ -216,7 +216,7 @@ def classify(response: str) -> Decision
 **Classification Rules:**
 - **"auto"**: Safe operations (tests, code generation, sandbox writes)
 - **"user"**: Dangerous operations (deploy, git push, system changes)
-- **"high" risk**: deploy, production, push, sudo, rm -rf, chmod, chown
+- **"high" risk**: deploy, production, push, sudo, rm -rf, chmod, chown, curl, wget, eval, exec
 
 **Example:**
 ```python
@@ -455,7 +455,7 @@ def load_permissions(path: str = CONFIG_PATH) -> dict[str, Any]
         "deploy": "deny"
     },
     "default": "ask",
-    "dangerous_keywords": ["deploy", "production", "sudo"],
+    "dangerous_keywords": ["deploy", "production", "push", "sudo", "rm -rf", "chmod", "chown", "curl", "wget", "eval", "exec"],
     "sandbox": {
         "root": "./sandbox",
         "allowed_extensions": [".py", ".txt", ".json"]
@@ -1022,4 +1022,4 @@ No rate limits (limited by hardware)
 
 ---
 
-*Last updated: 2024-01-15*
+*Last updated: 2025-02-12*

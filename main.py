@@ -10,7 +10,7 @@ import argparse
 import sys
 import time
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 from core.classifier import Decision, classify
 from core.claude import ClaudeError, get_model_info, get_response

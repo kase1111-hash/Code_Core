@@ -140,7 +140,7 @@ echo [INFO] Checking Ollama installation...
 where ollama >nul 2>nul
 if errorlevel 1 (
     echo [WARNING] Ollama not found. Install it for local LLM support.
-    echo   Visit: https://ollama.ai/download
+    echo   Visit: https://ollama.com/download
 ) else (
     echo [SUCCESS] Ollama found
 )

@@ -23,7 +23,7 @@ Thank you for your interest in contributing to the Ollama Automation Harness! Th
 Before contributing, ensure you have the following installed:
 
 - Python 3.10 or higher
-- [Ollama](https://ollama.ai) with a model (e.g., `llama3`)
+- [Ollama](https://ollama.com) with a model (e.g., `llama3`)
 - Git
 - Make (optional, but recommended)
 
