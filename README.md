@@ -155,7 +155,7 @@ dangerous_keywords:    # Always require approval
 | `MAX_REPLY_LENGTH` | Maximum characters to display from AI reply | `2000` |
 | `ENVIRONMENT` | Environment mode (`development`, `staging`, `production`, `testing`) | `development` |
 | `DEBUG` | Enable debug mode | `false` |
-| `SENTRY_DSN` | Sentry DSN for error tracking (optional) | (none) |
+
 
 ### CLI Commands
 
@@ -206,13 +206,7 @@ python cli.py check -v         # Verbose health check output
 
 # Version and monitoring
 python cli.py version          # Show version and system info
-python cli.py metrics          # Show telemetry (text format)
-python cli.py metrics -f json  # Show metrics in JSON format
-python cli.py metrics -f prometheus  # Show metrics in Prometheus format
-python cli.py metrics --save metrics.json  # Save metrics to file
-python cli.py status           # Show health status
-python cli.py status -w        # Watch status continuously (refresh every 5s)
-python cli.py status -f json   # Show status in JSON format
+python cli.py status           # Show application status
 ```
 
 ## Quick Help
@@ -268,11 +262,8 @@ ollama-automation-harness/
 │   ├── logger.py           # Audit logging
 │   ├── errors.py           # Error definitions
 │   ├── secrets.py          # Secure configuration
-│   ├── telemetry.py        # Telemetry collection
-│   ├── metrics.py          # Metrics registry
-│   ├── monitoring.py       # Health monitoring
 │   ├── version.py          # Version info
-│   ├── error_tracking.py   # Sentry/ELK error tracking
+│   ├── error_tracking.py   # Error tracking
 │   └── environment.py      # Environment management
 │
 ├── config/                 # Configuration files
@@ -377,10 +368,6 @@ For security vulnerability reporting, see [SECURITY.md](SECURITY.md).
 - [User Stories](docs/user-stories.md) - Requirements and acceptance criteria
 - [Tech Stack](docs/tech-stack.md) - Technology choices
 - [Style Guide](docs/style-guide.md) - Coding conventions
-
-### API Collections
-- [Postman Collection](docs/postman/ollama-harness-collection.json) - API testing collection
-- [OpenAPI Spec](docs/openapi-spec.yaml) - OpenAPI 3.1 specification
 
 ## Testing
 

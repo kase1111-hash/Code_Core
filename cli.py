@@ -63,10 +63,7 @@ For more information, visit: https://github.com/kase1111-hash/Code_Core
     # Version subcommand (detailed)
     _add_version_parser(subparsers)
 
-    # Metrics subcommand
-    _add_metrics_parser(subparsers)
-
-    # Status/monitoring subcommand
+    # Status subcommand
     _add_status_parser(subparsers)
 
     return parser
@@ -232,44 +229,12 @@ def _add_version_parser(subparsers) -> None:
     )
 
 
-def _add_metrics_parser(subparsers) -> None:
-    """Add the 'metrics' subcommand parser."""
-    metrics_parser = subparsers.add_parser(
-        "metrics",
-        help="Show application metrics and telemetry",
-        description="Display collected metrics and telemetry data.",
-    )
-    metrics_parser.add_argument(
-        "--format", "-f",
-        choices=["text", "json", "prometheus"],
-        default="text",
-        help="Output format (default: text)",
-    )
-    metrics_parser.add_argument(
-        "--save",
-        type=str,
-        metavar="FILE",
-        help="Save metrics to file",
-    )
-
-
 def _add_status_parser(subparsers) -> None:
     """Add the 'status' subcommand parser."""
-    status_parser = subparsers.add_parser(
+    subparsers.add_parser(
         "status",
-        help="Show application health and monitoring status",
-        description="Display health checks, errors, and performance metrics.",
-    )
-    status_parser.add_argument(
-        "--format", "-f",
-        choices=["text", "json"],
-        default="text",
-        help="Output format (default: text)",
-    )
-    status_parser.add_argument(
-        "--watch", "-w",
-        action="store_true",
-        help="Continuously watch status (refresh every 5s)",
+        help="Show application status summary",
+        description="Display basic application status and configuration.",
     )
 
 
@@ -574,62 +539,6 @@ def cmd_version(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_metrics(args: argparse.Namespace) -> int:
-    """
-    Execute the 'metrics' command.
-
-    Args:
-        args: Parsed arguments
-
-    Returns:
-        Exit code
-    """
-    from pathlib import Path
-
-    from utils.metrics import get_registry
-    from utils.telemetry import get_telemetry_summary
-
-    registry = get_registry()
-    output_format = getattr(args, "format", "text")
-    save_path = getattr(args, "save", None)
-
-    if output_format == "json":
-        output = registry.to_json()
-    elif output_format == "prometheus":
-        output = registry.to_prometheus()
-    else:
-        # Text format
-        summary = get_telemetry_summary()
-        lines = [
-            "Ollama Automation Harness - Metrics",
-            "=" * 50,
-            "",
-            f"Uptime: {summary['metrics']['uptime_seconds']:.1f} seconds",
-            f"Total Metrics: {summary['metrics']['total_metrics']}",
-            "",
-            "Telemetry:",
-            f"  Session ID: {summary['telemetry']['session_id']}",
-            f"  Enabled: {summary['telemetry']['enabled']}",
-            f"  Buffered Events: {summary['telemetry']['buffered_events']}",
-            "",
-            "Metrics:",
-        ]
-
-        for metric_value in registry.collect():
-            lines.append(f"  {metric_value.name}: {metric_value.value}")
-
-        output = "\n".join(lines)
-
-    # Save or print
-    if save_path:
-        Path(save_path).write_text(output)
-        print(f"Metrics saved to: {save_path}")
-    else:
-        print(output)
-
-    return 0
-
-
 def cmd_status(args: argparse.Namespace) -> int:
     """
     Execute the 'status' command.
@@ -640,76 +549,37 @@ def cmd_status(args: argparse.Namespace) -> int:
     Returns:
         Exit code
     """
-    import json as json_module
-    import time as time_module
+    import platform
+    from pathlib import Path
 
-    from utils.monitoring import get_status
+    from utils.config import LOG_FILE, PERMISSIONS_FILE, SANDBOX_DIR
+    from utils.version import get_version_info
 
-    output_format = getattr(args, "format", "text")
-    watch_mode = getattr(args, "watch", False)
+    info = get_version_info()
 
-    def print_status():
-        status = get_status()
+    print(f"Ollama Automation Harness v{info['version']} - Status")
+    print("=" * 50)
+    print(f"Python:      {platform.python_version()}")
+    print(f"Platform:    {platform.system()} {platform.release()}")
+    print(f"Sandbox:     {SANDBOX_DIR}")
+    print(f"Permissions: {PERMISSIONS_FILE}")
+    print(f"Log file:    {LOG_FILE}")
 
-        if output_format == "json":
-            print(json_module.dumps(status, indent=2))
-        else:
-            # Text format
-            status_symbol = {
-                "healthy": "\033[92m●\033[0m",    # Green
-                "degraded": "\033[93m●\033[0m",   # Yellow
-                "unhealthy": "\033[91m●\033[0m",  # Red
-                "unknown": "\033[90m●\033[0m",    # Gray
-            }.get(status["status"], "●")
+    # Check key paths
+    print("\nPaths:")
+    for label, path in [("Sandbox", SANDBOX_DIR), ("Log file", LOG_FILE)]:
+        exists = Path(path).exists()
+        print(f"  [{'+' if exists else '-'}] {label}: {path}")
 
-            print("\nOllama Automation Harness - Status")
-            print("=" * 50)
-            print(f"Status:  {status_symbol} {status['status'].upper()}")
-            print(f"Uptime:  {status['uptime']}")
-            print(f"Time:    {status['timestamp']}")
-
-            # Health checks
-            print("\nHealth Checks:")
-            for name, check in status["health"]["checks"].items():
-                check_symbol = {
-                    "healthy": "✓",
-                    "degraded": "!",
-                    "unhealthy": "✗",
-                }.get(check["status"], "?")
-                print(f"  [{check_symbol}] {name}: {check['message']}")
-
-            # Performance
-            perf = status["performance"]
-            print("\nPerformance:")
-            print(f"  Requests:     {perf['requests']}")
-            print(f"  Throughput:   {perf['throughput_rps']} req/s")
-            print(f"  Avg Response: {perf['avg_response_ms']} ms")
-            print(f"  P95 Response: {perf['p95_response_ms']} ms")
-
-            # Errors
-            errors = status["errors"]
-            print(f"\nErrors (last {errors['window_seconds']}s):")
-            print(f"  Count:     {errors['total_errors']}")
-            print(f"  Rate:      {errors['error_rate']:.2f}/s")
-            print(f"  Threshold: {errors['threshold']}")
-
-            # Alerts
-            if status["alerts"]:
-                print("\nActive Alerts:")
-                for alert in status["alerts"]:
-                    print(f"  [{alert['severity']}] {alert['title']}: {alert['message']}")
-
-    if watch_mode:
-        try:
-            while True:
-                print("\033[2J\033[H")  # Clear screen
-                print_status()
-                print("\nPress Ctrl+C to exit...")
-                time_module.sleep(5)
-        except KeyboardInterrupt:
-            print("\nStopped watching.")
-    else:
-        print_status()
+    # Check error counts
+    from utils.error_tracking import get_error_counts
+    counts = get_error_counts()
+    total = sum(counts.values())
+    print(f"\nErrors tracked: {total}")
+    if total > 0:
+        for level, count in sorted(counts.items()):
+            if count > 0:
+                print(f"  {level}: {count}")
 
     return 0
 
@@ -735,7 +605,6 @@ def main() -> int:
         "config": cmd_config,
         "check": cmd_check,
         "version": cmd_version,
-        "metrics": cmd_metrics,
         "status": cmd_status,
     }
 
