@@ -88,7 +88,10 @@ class SecureConfig:
 
     def load(self, env_file: str | None = None) -> SecureConfig:
         """
-        Load secrets from environment.
+        Load secrets from environment or vault.
+
+        If VAULT_ENABLED=true, attempts to load secrets from a vault
+        backend first. Falls back to .env / environment variables.
 
         Args:
             env_file: Optional path to .env file
@@ -110,14 +113,92 @@ class SecureConfig:
         # Set environment
         self.environment = self._detect_environment()
 
-        # Load secrets
+        # Try vault backend first (SEC-01)
+        vault_loaded = self._load_from_vault()
+
+        # Load remaining secrets from environment variables
         for secret_def in self.SECRET_DEFINITIONS:
-            value = os.getenv(secret_def.env_var)
-            if value:
-                self._secrets[secret_def.name] = value
+            if secret_def.name not in self._secrets:
+                value = os.getenv(secret_def.env_var)
+                if value:
+                    self._secrets[secret_def.name] = value
+
+        if vault_loaded:
+            warnings.warn("Secrets loaded from vault backend", stacklevel=2)
 
         self._loaded = True
         return self
+
+    def _load_from_vault(self) -> bool:
+        """
+        Attempt to load secrets from a vault backend.
+
+        Requires VAULT_ENABLED=true and VAULT_URL, VAULT_SECRET_PATH
+        environment variables. Currently supports a generic interface
+        that can be adapted to HashiCorp Vault, AWS Secrets Manager, etc.
+
+        Returns:
+            True if vault secrets were loaded successfully
+        """
+        if os.getenv("VAULT_ENABLED", "false").lower() not in ("true", "1", "yes"):
+            return False
+
+        vault_url = os.getenv("VAULT_URL")
+        vault_secret_path = os.getenv("VAULT_SECRET_PATH")
+
+        if not vault_url or not vault_secret_path:
+            warnings.warn(
+                "VAULT_ENABLED is true but VAULT_URL or VAULT_SECRET_PATH not set. "
+                "Falling back to environment variables.",
+                stacklevel=3,
+            )
+            return False
+
+        try:
+            import importlib
+            vault_module = importlib.import_module("hvac")
+            vault_token_path = os.getenv("VAULT_TOKEN_PATH", "/var/run/secrets/vault-token")
+
+            token = None
+            token_file = Path(vault_token_path)
+            if token_file.exists():
+                token = token_file.read_text().strip()
+            else:
+                token = os.getenv("VAULT_TOKEN")
+
+            if not token:
+                warnings.warn(
+                    "Vault token not found. Falling back to environment variables.",
+                    stacklevel=3,
+                )
+                return False
+
+            client = vault_module.Client(url=vault_url, token=token)
+            secret_response = client.secrets.kv.v2.read_secret_version(
+                path=vault_secret_path
+            )
+            vault_data = secret_response.get("data", {}).get("data", {})
+
+            for secret_def in self.SECRET_DEFINITIONS:
+                vault_key = secret_def.env_var
+                if vault_key in vault_data:
+                    self._secrets[secret_def.name] = vault_data[vault_key]
+
+            return True
+
+        except ImportError:
+            warnings.warn(
+                "VAULT_ENABLED is true but 'hvac' package not installed. "
+                "Install with: pip install hvac. Falling back to environment variables.",
+                stacklevel=3,
+            )
+            return False
+        except Exception as e:
+            warnings.warn(
+                f"Vault loading failed: {e}. Falling back to environment variables.",
+                stacklevel=3,
+            )
+            return False
 
     def validate(self) -> list[ConfigValidationError]:
         """

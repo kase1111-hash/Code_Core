@@ -17,7 +17,10 @@ services:
       - ./sandbox:/app/sandbox
       - ./logs:/app/logs
       - ./config:/app/config:ro
-    network_mode: host
+    networks:
+      - harness-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   dev:
     build:
@@ -32,6 +35,13 @@ services:
       - .:/app
       - /app/.venv
       - /app/__pycache__
-    network_mode: host
+    networks:
+      - harness-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     profiles:
       - dev
+
+networks:
+  harness-net:
+    driver: bridge

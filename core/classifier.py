@@ -72,7 +72,8 @@ def classify(response: str) -> Decision:
 
     # Try to classify using Ollama
     try:
-        prompt = CLASSIFICATION_PROMPT.format(claude_reply=response[:MAX_REPLY_LENGTH])
+        sanitized = _sanitize_for_classification(response[:MAX_REPLY_LENGTH])
+        prompt = CLASSIFICATION_PROMPT.format(claude_reply=sanitized)
         ollama_response = run_prompt(prompt)
         parsed = parse_json_response(ollama_response)
 
@@ -86,8 +87,11 @@ def classify(response: str) -> Decision:
             command = parsed.get("command") or extracted_command
             risk_level = validate_risk_level(parsed.get("risk_level", "medium"))
 
-            # Double-check for dangerous keywords in command
+            # Double-check for dangerous keywords in command and response
             if command and is_dangerous_keyword(command):
+                action = "user"
+                risk_level = "high"
+            if is_dangerous_keyword(response):
                 action = "user"
                 risk_level = "high"
 
@@ -147,6 +151,49 @@ def parse_json_response(response: str) -> dict | None:
 
     logger.warning("Failed to parse JSON from response (length=%d)", len(response))
     return None
+
+
+def _sanitize_for_classification(text: str) -> str:
+    """
+    Sanitize text before embedding in the classification prompt.
+
+    Prevents prompt injection by:
+    - Escaping triple-quote delimiters that could break out of the prompt
+    - Removing lines with common prompt injection phrases
+    - Stripping embedded JSON that could fake classification output
+
+    Args:
+        text: Raw LLM response text
+
+    Returns:
+        Sanitized text safe for embedding in classification prompt
+    """
+    # Escape triple-quote sequences to prevent breaking out of delimiters
+    text = text.replace('"""', r'\"\"\"')
+
+    # Remove lines that look like prompt injection attempts
+    injection_patterns = [
+        r'(?i)^\s*ignore\s+(all\s+)?previous',
+        r'(?i)^\s*you\s+are\s+now\b',
+        r'(?i)^\s*system\s*:',
+        r'(?i)^\s*output\s+only\b',
+        r'(?i)^\s*new\s+instructions?\s*:',
+        r'(?i)^\s*disregard\s+(all\s+)?above',
+    ]
+    lines = text.split('\n')
+    filtered_lines = []
+    for line in lines:
+        if not any(re.search(p, line) for p in injection_patterns):
+            filtered_lines.append(line)
+    text = '\n'.join(filtered_lines)
+
+    # Strip standalone JSON objects that could fake classification output
+    # (only strip top-level JSON blocks that look like classification results)
+    text = re.sub(
+        r'\{\s*"action"\s*:', '{ "action":', text
+    )
+
+    return text
 
 
 def extract_command(response: str) -> str | None:

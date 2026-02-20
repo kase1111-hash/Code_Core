@@ -7,6 +7,7 @@ with timestamps, decision details, execution results, and performance metrics.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import sys
@@ -66,12 +67,98 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_data)
 
 
+class TamperEvidentFormatter(JsonFormatter):
+    """JSON formatter with hash chaining for tamper evidence (SEC-10).
+
+    Each log entry includes a SHA-256 hash of the previous entry,
+    creating a chain that makes undetected modification or deletion
+    of log entries impossible.
+    """
+
+    SEED = "ollama-harness-log-chain-v1"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._prev_hash: str = hashlib.sha256(self.SEED.encode()).hexdigest()
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Format log record as hash-chained JSON."""
+        log_data = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+            "prev_hash": self._prev_hash,
+        }
+
+        if hasattr(record, "extra_data"):
+            log_data["data"] = record.extra_data
+
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+
+        json_line = json.dumps(log_data, sort_keys=True)
+        self._prev_hash = hashlib.sha256(json_line.encode()).hexdigest()
+        log_data["entry_hash"] = self._prev_hash
+
+        return json.dumps(log_data, sort_keys=True)
+
+
+def verify_log_integrity(log_file: str) -> tuple[bool, int, str]:
+    """Verify the hash chain integrity of a tamper-evident log file.
+
+    Args:
+        log_file: Path to log file with hash-chained entries
+
+    Returns:
+        Tuple of (is_valid, verified_count, error_message)
+    """
+    prev_hash = hashlib.sha256(TamperEvidentFormatter.SEED.encode()).hexdigest()
+    count = 0
+
+    try:
+        with open(log_file) as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    return (False, count, f"Line {line_num}: invalid JSON")
+
+                if entry.get("prev_hash") != prev_hash:
+                    return (False, count, f"Line {line_num}: hash chain broken")
+
+                stored_hash = entry.pop("entry_hash", None)
+                if stored_hash is None:
+                    return (False, count, f"Line {line_num}: missing entry_hash")
+
+                json_line = json.dumps(entry, sort_keys=True)
+                computed_hash = hashlib.sha256(json_line.encode()).hexdigest()
+
+                if computed_hash != stored_hash:
+                    return (False, count, f"Line {line_num}: entry hash mismatch")
+
+                prev_hash = stored_hash
+                count += 1
+
+    except FileNotFoundError:
+        return (False, 0, f"Log file not found: {log_file}")
+
+    return (True, count, "")
+
+
 def setup_logger(
     log_file: str = LOG_FILE,
     level: int = logging.INFO,
     enable_console: bool = True,
     enable_json: bool = False,
     enable_rotation: bool = True,
+    enable_tamper_evident: bool = False,
 ) -> logging.Logger:
     """
     Set up and configure the automation logger.
@@ -82,6 +169,7 @@ def setup_logger(
         enable_console: Enable console output
         enable_json: Enable JSON structured logging
         enable_rotation: Enable log file rotation
+        enable_tamper_evident: Enable hash-chained tamper-evident logging
 
     Returns:
         Configured logger instance
@@ -111,7 +199,9 @@ def setup_logger(
 
     file_handler.setLevel(level)
 
-    if enable_json:
+    if enable_tamper_evident:
+        file_handler.setFormatter(TamperEvidentFormatter())
+    elif enable_json:
         file_handler.setFormatter(JsonFormatter())
     else:
         file_handler.setFormatter(logging.Formatter(
