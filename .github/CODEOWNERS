@@ -1,0 +1,17 @@
+# Security-sensitive files require owner review (SEC-13)
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Core security modules
+core/executor.py        @kase1111-hash
+core/safety.py          @kase1111-hash
+core/classifier.py      @kase1111-hash
+
+# Validation and secrets
+utils/validation.py     @kase1111-hash
+utils/secrets.py        @kase1111-hash
+
+# Permission configuration
+config/permissions.yaml @kase1111-hash
+
+# CI/CD pipelines
+.github/workflows/      @kase1111-hash

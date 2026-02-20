@@ -373,19 +373,19 @@ grep -rniE "(~/\.|home/|\.config/)" --include="*.py"
 
 | ID | Severity | Tier | Finding | Status |
 |----|----------|------|---------|--------|
-| SEC-01 | MEDIUM | 1.1 | No encrypted vault integration for secrets | Open |
-| SEC-02 | **HIGH** | 1.2 | `shell=True` in primary execution path (`executor.py:66`) | Open |
-| SEC-03 | MEDIUM | 1.2 | Docker `network_mode: host` eliminates network isolation | Open |
-| SEC-04 | LOW | 1.2 | `os.system()` in setup wizard | Open |
-| SEC-05 | LOW | 1.3 | No cryptographic agent identity | Open |
-| SEC-06 | **HIGH** | 2.1 | Prompt injection in classification pipeline | Open |
-| SEC-07 | MEDIUM | 2.1 | No invisible text / zero-width character detection | Open |
-| SEC-08 | MEDIUM | 2.3 | No outbound secret scanning on LLM responses | Open |
-| SEC-09 | LOW | 2.4 | No module signing or capability manifests | Open |
-| SEC-10 | MEDIUM | 3.1 | Logs are not tamper-evident | Open |
-| SEC-11 | MEDIUM | 3.3 | Dependencies not pinned to exact versions | Open |
-| SEC-12 | MEDIUM | 3.3 | LLM response drives execution decisions (by design) | Acknowledged |
-| SEC-13 | LOW | 3.4 | No mandatory security review gate for PRs | Open |
+| SEC-01 | MEDIUM | 1.1 | No encrypted vault integration for secrets | **Remediated** — vault backend added to `utils/secrets.py` |
+| SEC-02 | **HIGH** | 1.2 | `shell=True` in primary execution path (`executor.py:66`) | **Remediated** — switched to `shlex.split()` + `shell=False` |
+| SEC-03 | MEDIUM | 1.2 | Docker `network_mode: host` eliminates network isolation | **Remediated** — replaced with bridge network in `docker-compose.yml` |
+| SEC-04 | LOW | 1.2 | `os.system()` in setup wizard | **Remediated** — replaced with ANSI escape codes |
+| SEC-05 | LOW | 1.3 | No cryptographic agent identity | Acknowledged — N/A for single-agent CLI; required if multi-agent added |
+| SEC-06 | **HIGH** | 2.1 | Prompt injection in classification pipeline | **Remediated** — added `_sanitize_for_classification()` in `classifier.py` |
+| SEC-07 | MEDIUM | 2.1 | No invisible text / zero-width character detection | **Remediated** — added Unicode zero-width stripping to `sanitize_string()` |
+| SEC-08 | MEDIUM | 2.3 | No outbound secret scanning on LLM responses | **Remediated** — added `scan_for_secrets()` to `validation.py` and `main.py` |
+| SEC-09 | LOW | 2.4 | No module signing or capability manifests | Acknowledged — N/A for current design; required if plugin system added |
+| SEC-10 | MEDIUM | 3.1 | Logs are not tamper-evident | **Remediated** — added `TamperEvidentFormatter` with SHA-256 hash chaining |
+| SEC-11 | MEDIUM | 3.3 | Dependencies not pinned to exact versions | **Remediated** — pinned all deps to exact versions in requirements files |
+| SEC-12 | MEDIUM | 3.3 | LLM response drives execution decisions (by design) | Acknowledged — mitigated by SEC-02 and SEC-06 fixes |
+| SEC-13 | LOW | 3.4 | No mandatory security review gate for PRs | **Remediated** — added `.github/CODEOWNERS` |
 
 ### Priority Remediation Order
 

@@ -68,6 +68,9 @@ def sanitize_string(text: str, allow_newlines: bool = True) -> str:
     """
     Remove potentially dangerous characters from string.
 
+    Strips ASCII control characters and Unicode zero-width/invisible
+    characters that could be used for prompt injection or hidden content.
+
     Args:
         text: Input string
         allow_newlines: Whether to allow newlines and tabs
@@ -88,6 +91,14 @@ def sanitize_string(text: str, allow_newlines: bool = True) -> str:
     else:
         # Remove all control characters
         text = re.sub(r'[\x00-\x1f\x7f]', '', text)
+
+    # Remove Unicode zero-width and invisible characters (SEC-07)
+    text = re.sub(
+        '[\u200b\u200c\u200d\ufeff\u2060\u2061\u2062\u2063\u2064\u180e'
+        '\u200e\u200f\u202a-\u202e\u2066-\u2069\u00ad]',
+        '',
+        text,
+    )
 
     return text
 
@@ -520,3 +531,44 @@ def sanitize_log_message(message: str) -> str:
     message = message.replace('"', '\\"')
 
     return message
+
+
+# =============================================================================
+# Outbound Secret Scanning (SEC-08)
+# =============================================================================
+
+# Patterns that match common secret/credential formats
+_SECRET_PATTERNS = [
+    (re.compile(r'sk-ant-[a-zA-Z0-9\-_]{20,}'), "Anthropic API key"),
+    (re.compile(r'sk-[a-zA-Z0-9]{32,}'), "API key"),
+    (re.compile(r'AKIA[0-9A-Z]{16}'), "AWS access key"),
+    (re.compile(r'ghp_[a-zA-Z0-9]{36,}'), "GitHub PAT"),
+    (re.compile(r'github_pat_[a-zA-Z0-9_]{20,}'), "GitHub fine-grained PAT"),
+    (re.compile(r'gho_[a-zA-Z0-9]{36,}'), "GitHub OAuth token"),
+    (re.compile(r'glpat-[a-zA-Z0-9\-_]{20,}'), "GitLab PAT"),
+    (re.compile(r'-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----'), "Private key"),
+    (re.compile(r'Bearer\s+[a-zA-Z0-9\-_.~+/]{20,}'), "Bearer token"),
+    (re.compile(r'xox[bpsa]-[a-zA-Z0-9\-]{10,}'), "Slack token"),
+]
+
+
+def scan_for_secrets(text: str) -> str:
+    """
+    Scan text for secret patterns and redact them.
+
+    Designed to be applied to LLM responses and command output before
+    displaying to prevent accidental credential exposure.
+
+    Args:
+        text: Text to scan
+
+    Returns:
+        Text with detected secrets replaced by [REDACTED]
+    """
+    if not text:
+        return text
+
+    for pattern, _label in _SECRET_PATTERNS:
+        text = pattern.sub("[REDACTED]", text)
+
+    return text

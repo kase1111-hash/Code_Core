@@ -51,6 +51,7 @@ from utils.secrets import (
 )
 from utils.validation import (
     ValidationError,
+    scan_for_secrets,
     truncate_response,
     validate_prompt,
     validate_response,
@@ -346,9 +347,9 @@ def process_iteration(
                 if result.success:
                     print("\n[Result]: Success")
                     if verbose and result.output:
-                        print(result.output[:500])
+                        print(scan_for_secrets(result.output[:500]))
                 else:
-                    print(f"\n[Result]: Failed - {result.error}")
+                    print(f"\n[Result]: Failed - {scan_for_secrets(result.error)}")
 
                 # Build continuation prompt
                 return build_continuation_prompt(claude_reply, result)
@@ -449,9 +450,9 @@ def handle_user_action(
             if result.success:
                 print("\n[Result]: Success")
                 if result.output:
-                    print(result.output[:500])
+                    print(scan_for_secrets(result.output[:500]))
             else:
-                print(f"\n[Result]: Failed - {result.error}")
+                print(f"\n[Result]: Failed - {scan_for_secrets(result.error)}")
 
             return build_continuation_prompt("User approved execution", result)
         else:
@@ -476,11 +477,15 @@ def display_response(response: str) -> None:
     """
     Display Claude's response (truncated if needed).
 
+    Scans output for secrets before displaying to prevent
+    accidental credential exposure (SEC-08).
+
     Args:
         response: Response text to display
     """
     print("\n[Claude]:")
-    print(truncate_response(response, MAX_REPLY_LENGTH))
+    safe_response = scan_for_secrets(response)
+    print(truncate_response(safe_response, MAX_REPLY_LENGTH))
 
 
 def build_continuation_prompt(previous_response: str, result: ExecutionResult) -> str:

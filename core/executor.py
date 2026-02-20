@@ -6,6 +6,7 @@ directory with path validation and timeout handling.
 """
 
 import os
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -59,11 +60,28 @@ def execute(command: str, sandbox_root: str = SANDBOX_DIR) -> ExecutionResult:
     sandbox_path = Path(sandbox_root).resolve()
     sandbox_path.mkdir(parents=True, exist_ok=True)
 
+    # Parse command string into argument list to avoid shell=True
     try:
-        # Execute command with sandbox as working directory
+        cmd_args = shlex.split(command)
+    except ValueError as e:
+        return ExecutionResult(
+            success=False,
+            output="",
+            error=f"Failed to parse command: {e}",
+            return_code=-1,
+        )
+
+    if not cmd_args:
+        return ExecutionResult(
+            success=False,
+            output="",
+            error="Empty command after parsing",
+            return_code=-1,
+        )
+
+    try:
         result = subprocess.run(
-            command,
-            shell=True,
+            cmd_args,
             cwd=str(sandbox_path),
             capture_output=True,
             text=True,
@@ -83,6 +101,14 @@ def execute(command: str, sandbox_root: str = SANDBOX_DIR) -> ExecutionResult:
             success=False,
             output="",
             error=f"Command timed out after {COMMAND_TIMEOUT} seconds",
+            return_code=-1,
+        )
+
+    except FileNotFoundError:
+        return ExecutionResult(
+            success=False,
+            output="",
+            error=f"Command not found: {cmd_args[0]}",
             return_code=-1,
         )
 

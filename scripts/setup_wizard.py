@@ -65,8 +65,8 @@ if sys.platform == "win32" and not os.environ.get("TERM"):
 
 
 def clear_screen():
-    """Clear the terminal screen."""
-    os.system("cls" if sys.platform == "win32" else "clear")
+    """Clear the terminal screen using ANSI escape codes."""
+    print("\033[2J\033[H", end="", flush=True)
 
 
 def print_banner():
